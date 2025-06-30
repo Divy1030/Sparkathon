@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShipmentStatus } from '../types/types';
+import { ShipmentStatus } from '../../types';
 import { Truck, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface ShipmentTrackerProps {
