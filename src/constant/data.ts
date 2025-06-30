@@ -1,37 +1,57 @@
-import { Supplier, Inventory, ShipmentStatus, PerformanceMetric } from '../components/types/types';
+import { Supplier, Inventory, ShipmentStatus, PerformanceMetric } from '../types';
 
 export const suppliers: Supplier[] = [
   {
     id: '1',
     name: 'TechComponents Inc',
+    location: 'San Francisco, CA',
     reliability: 0.95,
     leadTime: 5,
     costPerUnit: 120,
-    location: 'San Francisco, CA'
+    deliveryTime: 5,
+    defectRate: 0.05,
+    cost: 120,
+    reliabilityScore: 95,
+    category: 'Electronics'
   },
   {
     id: '2',
     name: 'Global Parts Ltd',
+    location: 'Shanghai, China',
     reliability: 0.88,
     leadTime: 8,
     costPerUnit: 95,
-    location: 'Shanghai, China'
+    deliveryTime: 8,
+    defectRate: 0.12,
+    cost: 95,
+    reliabilityScore: 88,
+    category: 'Electronics'
   },
   {
     id: '3',
     name: 'EuroSupply GmbH',
+    location: 'Munich, Germany',
     reliability: 0.92,
     leadTime: 7,
     costPerUnit: 110,
-    location: 'Munich, Germany'
+    deliveryTime: 7,
+    defectRate: 0.08,
+    cost: 110,
+    reliabilityScore: 92,
+    category: 'Electronics'
   },
   {
     id: '4',
     name: 'Pacific Logistics',
+    location: 'Singapore',
     reliability: 0.89,
     leadTime: 6,
     costPerUnit: 105,
-    location: 'Singapore'
+    deliveryTime: 6,
+    defectRate: 0.11,
+    cost: 105,
+    reliabilityScore: 89,
+    category: 'Electronics'
   }
 ];
 

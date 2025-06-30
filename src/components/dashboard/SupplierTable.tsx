@@ -1,5 +1,5 @@
 import React from 'react';
-import { Supplier } from '../types/types';
+import { Supplier } from '../../types';
 
 interface SupplierTableProps {
   suppliers: Supplier[];
