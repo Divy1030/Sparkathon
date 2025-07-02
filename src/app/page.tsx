@@ -10,7 +10,10 @@ import {
   Bell, 
   FileText, 
   Moon, 
-  Sun
+  Sun,
+  ChevronDown,
+  ChevronRight,
+  ShoppingCart
 } from 'lucide-react';
 import { NavItem } from '../types';
 import { mockAlerts } from '../data/mockData';
@@ -19,6 +22,7 @@ import InventoryForecasting from '../components/dashboard/InventoryForecasting';
 import SupplierReliability from '../components/dashboard/SupplierReliability';
 import LastMileDelivery from '../components/dashboard/LastMileDelivery';
 import WarehouseAI from '../components/dashboard/WarehouseAI';
+import PurchaseManagement from '../components/dashboard/PurchaseManagement';
 import MapSimulation from '../components/dashboard/MapSimulation';
 import AlertsPage from '../components/dashboard/AlertsPage';
 import ReportsPage from '../components/dashboard/ReportsPage';
@@ -28,13 +32,13 @@ export default function SupplyChainDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
   const [alerts, setAlerts] = useState(mockAlerts);
+  const [inventoryDropdownOpen, setInventoryDropdownOpen] = useState(false);
 
   const navItems: NavItem[] = [
     { id: 'dashboard', name: 'Dashboard Overview', icon: Home },
-    { id: 'inventory', name: 'Inventory Forecasting', icon: Package },
+    { id: 'forecasting', name: 'Inventory Forecasting', icon: Package },
     { id: 'suppliers', name: 'Supplier Reliability', icon: Users },
     { id: 'delivery', name: 'Last-Mile Delivery', icon: Truck },
-    { id: 'warehouse-ai', name: 'Warehouse Selector AI', icon: Warehouse },
     { id: 'map', name: 'Map Simulation', icon: MapPin },
     { id: 'alerts', name: 'Alerts & Anomalies', icon: Bell },
     { id: 'reports', name: 'Reports & Insights', icon: FileText }
@@ -60,7 +64,7 @@ export default function SupplyChainDashboard() {
             resolveAlert={resolveAlert} 
           />
         );
-      case 'inventory':
+      case 'forecasting':
         return <InventoryForecasting cardClass={cardClass} />;
       case 'suppliers':
         return <SupplierReliability cardClass={cardClass} />;
@@ -68,6 +72,8 @@ export default function SupplyChainDashboard() {
         return <LastMileDelivery cardClass={cardClass} />;
       case 'warehouse-ai':
         return <WarehouseAI cardClass={cardClass} />;
+      case 'purchase':
+        return <PurchaseManagement cardClass={cardClass} />;
       case 'map':
         return <MapSimulation cardClass={cardClass} darkMode={darkMode} />;
       case 'alerts':
@@ -115,6 +121,61 @@ export default function SupplyChainDashboard() {
                   <span className="text-sm font-medium">{item.name}</span>
                 </button>
               ))}
+              
+              {/* Inventory Section with Dropdown */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setInventoryDropdownOpen(!inventoryDropdownOpen)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                    (activeTab === 'warehouse-ai' || activeTab === 'purchase')
+                      ? 'bg-blue-500 text-white'
+                      : darkMode 
+                        ? 'hover:bg-gray-700 text-gray-300' 
+                        : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  <Warehouse className="w-5 h-5" />
+                  <span className="text-sm font-medium flex-1">Inventory</span>
+                  {inventoryDropdownOpen ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+                
+                {/* Dropdown Items */}
+                {inventoryDropdownOpen && (
+                  <div className="ml-4 mt-2 space-y-1">
+                    <button
+                      onClick={() => setActiveTab('warehouse-ai')}
+                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors ${
+                        activeTab === 'warehouse-ai'
+                          ? 'bg-blue-400 text-white'
+                          : darkMode 
+                            ? 'hover:bg-gray-700 text-gray-400' 
+                            : 'hover:bg-gray-50 text-gray-600'
+                      }`}
+                    >
+                      <Warehouse className="w-4 h-4" />
+                      <span className="text-sm">Warehouse AI</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setActiveTab('purchase')}
+                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors ${
+                        activeTab === 'purchase'
+                          ? 'bg-blue-400 text-white'
+                          : darkMode 
+                            ? 'hover:bg-gray-700 text-gray-400' 
+                            : 'hover:bg-gray-50 text-gray-600'
+                      }`}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span className="text-sm">Purchase</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </nav>
             
             {/* Dark Mode Toggle */}
