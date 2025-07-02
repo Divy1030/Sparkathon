@@ -7,12 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Wait for params since it's now a Promise
     const { id } = await params;
     
     if (!id) {
       return NextResponse.json(
-        { success: false, message: 'Purchase ID is required' },
+        { success: false, message: 'Defect report ID is required' },
         { status: 400 }
       );
     }
@@ -32,7 +31,7 @@ export async function GET(
     }
 
     // Call backend API
-    const response = await fetch(endpoints.purchase.getById(id), {
+    const response = await fetch(endpoints.defectReport.getById(id), {
       method: 'GET',
       headers,
       cache: "no-store",
@@ -50,13 +49,13 @@ export async function GET(
     }
 
     const data = await response.json();
-    console.log("Get purchase by ID response:", data);
+    console.log("Get defect report by ID response:", data);
 
     if (!response.ok) {
       return NextResponse.json(
         {
           success: false,
-          message: data.message || 'Failed to fetch purchase',
+          message: data.message || 'Failed to fetch defect report',
           details: data
         },
         { status: response.status }
@@ -65,11 +64,11 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      message: data.message || 'Purchase fetched successfully',
+      message: data.message || 'Defect report fetched successfully',
       data: data.data || data
     });
   } catch (error) {
-    console.error('Get purchase by ID error details:', error);
+    console.error('Get defect report by ID error details:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -86,17 +85,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Wait for params since it's now a Promise
     const { id } = await params;
+    const body = await request.json();
     
     if (!id) {
       return NextResponse.json(
-        { success: false, message: 'Purchase ID is required' },
+        { success: false, message: 'Defect report ID is required' },
         { status: 400 }
       );
     }
-
-    const body = await request.json();
 
     // Get token from cookies or authorization header
     const token = request.cookies.get('accessToken')?.value || 
@@ -113,7 +110,7 @@ export async function PUT(
     }
 
     // Call backend API
-    const response = await fetch(endpoints.purchase.update(id), {
+    const response = await fetch(endpoints.defectReport.update(id), {
       method: 'PUT',
       headers,
       body: JSON.stringify(body),
@@ -132,13 +129,13 @@ export async function PUT(
     }
 
     const data = await response.json();
-    console.log("Update purchase response:", data);
+    console.log("Update defect report response:", data);
 
     if (!response.ok) {
       return NextResponse.json(
         {
           success: false,
-          message: data.message || 'Failed to update purchase',
+          message: data.message || 'Failed to update defect report',
           details: data
         },
         { status: response.status }
@@ -147,11 +144,11 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: data.message || 'Purchase updated successfully',
+      message: data.message || 'Defect report updated successfully',
       data: data.data || data
     });
   } catch (error) {
-    console.error('Update purchase error details:', error);
+    console.error('Update defect report error details:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -168,12 +165,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Wait for params since it's now a Promise
     const { id } = await params;
     
     if (!id) {
       return NextResponse.json(
-        { success: false, message: 'Purchase ID is required' },
+        { success: false, message: 'Defect report ID is required' },
         { status: 400 }
       );
     }
@@ -193,7 +189,7 @@ export async function DELETE(
     }
 
     // Call backend API
-    const response = await fetch(endpoints.purchase.delete(id), {
+    const response = await fetch(endpoints.defectReport.delete(id), {
       method: 'DELETE',
       headers,
       cache: "no-store",
@@ -211,13 +207,13 @@ export async function DELETE(
     }
 
     const data = await response.json();
-    console.log("Delete purchase response:", data);
+    console.log("Delete defect report response:", data);
 
     if (!response.ok) {
       return NextResponse.json(
         {
           success: false,
-          message: data.message || 'Failed to delete purchase',
+          message: data.message || 'Failed to delete defect report',
           details: data
         },
         { status: response.status }
@@ -226,11 +222,11 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: data.message || 'Purchase deleted successfully',
+      message: data.message || 'Defect report deleted successfully',
       data: data.data || data
     });
   } catch (error) {
-    console.error('Delete purchase error details:', error);
+    console.error('Delete defect report error details:', error);
     return NextResponse.json(
       { 
         success: false, 
