@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Package, Plus, Search, Filter, Truck, DollarSign, Clock, CheckCircle, MapPin } from 'lucide-react';
-import { warehouses } from '../../constant/data';
-import { Warehouse } from '../../types';
+import { ShoppingCart, Package, Plus, Search, Filter, Truck, DollarSign, Clock, CheckCircle } from 'lucide-react';
 
 interface PurchaseManagementProps {
   cardClass: string;
@@ -26,8 +24,6 @@ interface PurchaseOrder {
   unitPrice: number;
   totalPrice: number;
   supplier: string;
-  warehouseId: string;
-  warehouseName: string;
   status: 'pending' | 'ordered' | 'shipped' | 'delivered';
   orderDate: string;
   expectedDelivery: string;
@@ -38,7 +34,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
   const [purchaseQuantity, setPurchaseQuantity] = useState(1);
 
   // Mock data for products
@@ -109,8 +104,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
       unitPrice: 299.99,
       totalPrice: 29999,
       supplier: 'TechFlow Logistics',
-      warehouseId: 'WH001',
-      warehouseName: 'Austin Central Warehouse',
       status: 'shipped',
       orderDate: '2024-11-20',
       expectedDelivery: '2024-12-02'
@@ -122,8 +115,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
       unitPrice: 24.99,
       totalPrice: 4998,
       supplier: 'QuickShip Express',
-      warehouseId: 'WH002',
-      warehouseName: 'Dallas Distribution Center',
       status: 'delivered',
       orderDate: '2024-11-18',
       expectedDelivery: '2024-11-28'
@@ -135,8 +126,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
       unitPrice: 12.99,
       totalPrice: 6495,
       supplier: 'ReliableCargo',
-      warehouseId: 'WH003',
-      warehouseName: 'Houston Industrial Hub',
       status: 'pending',
       orderDate: '2024-11-30',
       expectedDelivery: '2024-12-05'
@@ -152,7 +141,7 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
   });
 
   const handlePurchase = () => {
-    if (!selectedProduct || !selectedWarehouse) return;
+    if (!selectedProduct) return;
 
     const newOrder: PurchaseOrder = {
       id: `PO${String(purchaseOrders.length + 1).padStart(3, '0')}`,
@@ -161,8 +150,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
       unitPrice: selectedProduct.price,
       totalPrice: purchaseQuantity * selectedProduct.price,
       supplier: selectedProduct.supplier,
-      warehouseId: selectedWarehouse.id,
-      warehouseName: selectedWarehouse.name,
       status: 'pending',
       orderDate: new Date().toISOString().split('T')[0],
       expectedDelivery: new Date(Date.now() + selectedProduct.leadTime * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -171,7 +158,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
     setPurchaseOrders(prev => [newOrder, ...prev]);
     setShowPurchaseModal(false);
     setSelectedProduct(null);
-    setSelectedWarehouse(null);
     setPurchaseQuantity(1);
   };
 
@@ -302,7 +288,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
                 <th className="text-left py-2">Product</th>
                 <th className="text-left py-2">Quantity</th>
                 <th className="text-left py-2">Total</th>
-                <th className="text-left py-2">Warehouse</th>
                 <th className="text-left py-2">Supplier</th>
                 <th className="text-left py-2">Status</th>
                 <th className="text-left py-2">Expected Delivery</th>
@@ -315,12 +300,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
                   <td className="py-3">{order.productName}</td>
                   <td className="py-3">{order.quantity}</td>
                   <td className="py-3">${order.totalPrice.toLocaleString()}</td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-1 text-sm">
-                      <MapPin className="w-3 h-3 text-gray-500" />
-                      {order.warehouseName}
-                    </div>
-                  </td>
                   <td className="py-3 text-sm">{order.supplier}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
@@ -343,25 +322,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
             <h3 className="text-lg font-semibold mb-4">Purchase {selectedProduct.name}</h3>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Warehouse</label>
-                <select
-                  value={selectedWarehouse?.id || ''}
-                  onChange={(e) => {
-                    const warehouse = warehouses.find(w => w.id === e.target.value);
-                    setSelectedWarehouse(warehouse || null);
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select a warehouse...</option>
-                  {warehouses.map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name} (Load: {warehouse.load}%, Efficiency: {warehouse.efficiency}%)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2">Quantity</label>
                 <input
@@ -390,15 +350,6 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
                   <span>Supplier:</span>
                   <span>{selectedProduct.supplier}</span>
                 </div>
-                {selectedWarehouse && (
-                  <div className="flex justify-between">
-                    <span>Warehouse:</span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {selectedWarehouse.name}
-                    </span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span>Expected Delivery:</span>
                   <span>{new Date(Date.now() + selectedProduct.leadTime * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
@@ -415,12 +366,7 @@ const PurchaseManagement: React.FC<PurchaseManagementProps> = ({ cardClass }) =>
               </button>
               <button
                 onClick={handlePurchase}
-                disabled={!selectedWarehouse}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                  selectedWarehouse
-                    ? 'bg-blue-500 text-white hover:bg-blue-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
               >
                 Confirm Purchase
               </button>

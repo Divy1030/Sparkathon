@@ -1,57 +1,37 @@
-import { Supplier, Inventory, ShipmentStatus, PerformanceMetric, Warehouse } from '../types';
+import { Supplier, Inventory, ShipmentStatus, PerformanceMetric } from '../components/types/types';
 
 export const suppliers: Supplier[] = [
   {
     id: '1',
     name: 'TechComponents Inc',
-    location: 'San Francisco, CA',
     reliability: 0.95,
     leadTime: 5,
     costPerUnit: 120,
-    deliveryTime: 5,
-    defectRate: 0.05,
-    cost: 120,
-    reliabilityScore: 95,
-    category: 'Electronics'
+    location: 'San Francisco, CA'
   },
   {
     id: '2',
     name: 'Global Parts Ltd',
-    location: 'Shanghai, China',
     reliability: 0.88,
     leadTime: 8,
     costPerUnit: 95,
-    deliveryTime: 8,
-    defectRate: 0.12,
-    cost: 95,
-    reliabilityScore: 88,
-    category: 'Electronics'
+    location: 'Shanghai, China'
   },
   {
     id: '3',
     name: 'EuroSupply GmbH',
-    location: 'Munich, Germany',
     reliability: 0.92,
     leadTime: 7,
     costPerUnit: 110,
-    deliveryTime: 7,
-    defectRate: 0.08,
-    cost: 110,
-    reliabilityScore: 92,
-    category: 'Electronics'
+    location: 'Munich, Germany'
   },
   {
     id: '4',
     name: 'Pacific Logistics',
-    location: 'Singapore',
     reliability: 0.89,
     leadTime: 6,
     costPerUnit: 105,
-    deliveryTime: 6,
-    defectRate: 0.11,
-    cost: 105,
-    reliabilityScore: 89,
-    category: 'Electronics'
+    location: 'Singapore'
   }
 ];
 
@@ -126,72 +106,3 @@ export const performanceMetrics: PerformanceMetric[] = Array.from({ length: 12 }
   supplierReliability: 0.88 + Math.random() * 0.1,
   costEfficiency: 0.82 + Math.random() * 0.15
 }));
-
-// Warehouse data for purchase management
-export const warehouses: Warehouse[] = [
-  {
-    id: 'WH001',
-    name: 'Austin Central Warehouse',
-    location: { lat: 30.2672, lng: -97.7431 },
-    stock: {
-      electronics: 15000,
-      clothing: 8500,
-      food: 12000
-    },
-    load: 65,
-    droneReady: true,
-    efficiency: 92
-  },
-  {
-    id: 'WH002',
-    name: 'Dallas Distribution Center',
-    location: { lat: 32.7767, lng: -96.7970 },
-    stock: {
-      electronics: 22000,
-      clothing: 15000,
-      food: 8500
-    },
-    load: 78,
-    droneReady: true,
-    efficiency: 88
-  },
-  {
-    id: 'WH003',
-    name: 'Houston Industrial Hub',
-    location: { lat: 29.7604, lng: -95.3698 },
-    stock: {
-      electronics: 18500,
-      clothing: 12000,
-      food: 20000
-    },
-    load: 55,
-    droneReady: false,
-    efficiency: 85
-  },
-  {
-    id: 'WH004',
-    name: 'San Antonio Logistics Center',
-    location: { lat: 29.4241, lng: -98.4936 },
-    stock: {
-      electronics: 9500,
-      clothing: 18000,
-      food: 15500
-    },
-    load: 42,
-    droneReady: true,
-    efficiency: 90
-  },
-  {
-    id: 'WH005',
-    name: 'El Paso Border Facility',
-    location: { lat: 31.7619, lng: -106.4850 },
-    stock: {
-      electronics: 7200,
-      clothing: 9800,
-      food: 11200
-    },
-    load: 35,
-    droneReady: false,
-    efficiency: 82
-  }
-];
