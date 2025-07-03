@@ -187,7 +187,10 @@ export class ApiClient {
   // Inventory APIs
   async getInventory(params?: {
     warehouseId?: string;
-    lowStock?: boolean;
+    category?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
   }) {
     const queryParams = new URLSearchParams();
     if (params) {
@@ -202,8 +205,75 @@ export class ApiClient {
     return this.makeRequest<any[]>(endpoint);
   }
 
-  async getInventorySummary() {
-    return this.makeRequest('/inventory/summary');
+  async getWarehouseInventory(warehouseId: string, params?: {
+    category?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/inventory/warehouse/${warehouseId}?${queryString}` : `/inventory/warehouse/${warehouseId}`;
+    return this.makeRequest<any[]>(endpoint);
+  }
+
+  async getInventorySummary(warehouseId?: string) {
+    const queryParams = new URLSearchParams();
+    if (warehouseId) {
+      queryParams.append('warehouse', warehouseId);
+    }
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/inventory/summary?${queryString}` : '/inventory/summary';
+    return this.makeRequest(endpoint);
+  }
+
+  async getLowStockItems(warehouseId?: string) {
+    const queryParams = new URLSearchParams();
+    if (warehouseId) {
+      queryParams.append('warehouse', warehouseId);
+    }
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/inventory/low-stock?${queryString}` : '/inventory/low-stock';
+    return this.makeRequest<any[]>(endpoint);
+  }
+
+  async createOrUpdateInventory(data: {
+    warehouseId: string;
+    productId: string;
+    quantity: number;
+    location?: any;
+    minimumStockLevel?: number;
+    maximumStockLevel?: number;
+    reorderPoint?: number;
+  }) {
+    return this.makeRequest('/inventory', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateInventoryQuantity(inventoryId: string, data: {
+    quantity?: number;
+    adjustment?: number;
+    reason?: string;
+  }) {
+    return this.makeRequest(`/inventory/${inventoryId}/quantity`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteInventory(inventoryId: string) {
+    return this.makeRequest(`/inventory/${inventoryId}`, {
+      method: 'DELETE',
+    });
   }
 
   // Purchase APIs
@@ -224,6 +294,33 @@ export class ApiClient {
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/purchase?${queryString}` : '/purchase';
     return this.makeRequest<any[]>(endpoint);
+  }
+
+  async createPurchase(purchaseData: {
+    warehouse: { id: string };
+    product: { id: string };
+    supplier: { id: string };
+    quantity: number;
+    orderDate: string;
+    expectedDeliveryDate: string;
+    createdBy: string;
+    unitPrice?: number;
+  }) {
+    return this.makeRequest('/purchase', {
+      method: 'POST',
+      body: JSON.stringify(purchaseData),
+    });
+  }
+
+  async updatePurchaseStatus(purchaseId: string, data: {
+    status: string;
+    actualDeliveryDate?: string;
+    notes?: string;
+  }) {
+    return this.makeRequest(`/purchase/${purchaseId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async getPurchaseAnalytics() {
@@ -303,8 +400,15 @@ export const {
   getWarehouses,
   getWarehouseUtilization,
   getInventory,
+  getWarehouseInventory,
   getInventorySummary,
+  getLowStockItems,
+  createOrUpdateInventory,
+  updateInventoryQuantity,
+  deleteInventory,
   getPurchases,
+  createPurchase,
+  updatePurchaseStatus,
   getPurchaseAnalytics,
   getDefectReports,
   getDefectReportById,

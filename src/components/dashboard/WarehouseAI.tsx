@@ -4,6 +4,8 @@ import { mockCustomerLocations } from '../../data/mockData';
 import { MapPin, Package, Clock, AlertTriangle, CheckCircle, Truck, Navigation, Zap, Target, Plus, Edit, Trash2 } from 'lucide-react';
 import WarehouseLocationRecommendations from './WarehouseLocationRecommendations';
 import WarehouseForm from '../forms/WarehouseForm';
+import InventoryForm from '../forms/InventoryForm';
+import PurchaseOrderTest from './PurchaseOrderTest';
 import { apiClient } from '../../lib/apiUtils';
 
 interface WarehouseAIProps {
@@ -17,7 +19,7 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
   const [selectionResult, setSelectionResult] = useState<WarehouseSelectionResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [useOpenRouteService, setUseOpenRouteService] = useState(false);
-  const [activeTab, setActiveTab] = useState<'selection' | 'recommendations' | 'manage'>('selection');
+  const [activeTab, setActiveTab] = useState<'selection' | 'recommendations' | 'manage' | 'inventory' | 'test'>('selection');
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showWarehouseForm, setShowWarehouseForm] = useState(false);
@@ -467,6 +469,32 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
             Manage Warehouses
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab('inventory')}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'inventory'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Package className="w-4 h-4" />
+            Inventory Management
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('test')}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'test'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Test Orders
+          </div>
+        </button>
       </div>
 
       {activeTab === 'selection' ? (
@@ -806,6 +834,10 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
         </>
       ) : activeTab === 'recommendations' ? (
         <WarehouseLocationRecommendations cardClass={cardClass} />
+      ) : activeTab === 'inventory' ? (
+        <InventoryManagementTab warehouses={warehouses} cardClass={cardClass} />
+      ) : activeTab === 'test' ? (
+        <PurchaseOrderTest cardClass={cardClass} />
       ) : (
         /* Warehouse Management Tab */
         <div className="space-y-6">
@@ -946,6 +978,129 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
               editingWarehouse={editingWarehouse}
             />
           )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Inventory Management Tab Component
+const InventoryManagementTab: React.FC<{ warehouses: any[]; cardClass: string }> = ({ warehouses, cardClass }) => {
+  const [selectedWarehouse, setSelectedWarehouse] = useState<any>(null);
+
+  if (selectedWarehouse) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setSelectedWarehouse(null)}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            ← Back to Warehouse List
+          </button>
+          <h2 className="text-xl font-semibold">
+            Inventory Management - {selectedWarehouse.name}
+          </h2>
+        </div>
+        
+        <InventoryForm
+          warehouseId={selectedWarehouse.id}
+          warehouseName={selectedWarehouse.name}
+          onClose={() => setSelectedWarehouse(null)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Inventory Management</h2>
+        <p className="text-gray-600">Select a warehouse to manage its inventory</p>
+      </div>
+
+      {warehouses.length === 0 ? (
+        <div className={`p-8 rounded-lg ${cardClass} border shadow-sm text-center`}>
+          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Warehouses Found</h3>
+          <p className="text-gray-500">Add some warehouses first to manage their inventory.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {warehouses.map((warehouse: any) => (
+            <div 
+              key={warehouse.id} 
+              className={`p-6 rounded-lg ${cardClass} border shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+              onClick={() => setSelectedWarehouse(warehouse)}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">{warehouse.name}</h3>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  warehouse.status === 'active' ? 'bg-green-100 text-green-800' :
+                  warehouse.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {warehouse.status}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">{warehouse.location.address}</span>
+                </div>
+                
+                <div className="pt-3 border-t">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Current Stock Levels</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Electronics:</span>
+                      <span className="font-medium">{warehouse.stock.electronics}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Clothing:</span>
+                      <span className="font-medium">{warehouse.stock.clothing}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Food:</span>
+                      <span className="font-medium">{warehouse.stock.food}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Books:</span>
+                      <span className="font-medium">{warehouse.stock.books}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Capacity Used:</span>
+                    <span className={`text-sm font-medium ${
+                      warehouse.load > 80 ? 'text-red-600' : 
+                      warehouse.load > 60 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {warehouse.load}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                    <div
+                      className={`h-2 rounded-full ${
+                        warehouse.load > 80 ? 'bg-red-500' : 
+                        warehouse.load > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${warehouse.load}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3 text-center">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm">
+                    Manage Inventory
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
