@@ -402,6 +402,44 @@ export interface DashboardComponentProps {
   darkMode?: boolean;
 }
 
+// Warehouse Location Recommendation types
+export interface OrderData {
+  id: string;
+  lat: number;
+  lng: number;
+  category: ProductCategory;
+  orderValue: number;
+  delayScore: number;
+  deliveryTime: number;
+  customerId?: string;
+  timestamp: string;
+}
+
+export interface RecommendedWarehouseLocation {
+  id: string;
+  suggestedName: string;
+  lat: number;
+  lng: number;
+  score: number;
+  orderVolume: number;
+  avgDeliveryImprovement: number;
+  estimatedCostSavings: number;
+  coverageRadius: number;
+  demandDensity: number;
+  reasons: string[];
+  nearbyPopulation?: number;
+  accessibilityScore: number;
+}
+
+export interface ClusterAnalysis {
+  clusterId: number;
+  center: { lat: number; lng: number };
+  orderCount: number;
+  avgDelay: number;
+  totalOrderValue: number;
+  recommendedLocation: RecommendedWarehouseLocation;
+}
+
 // Route calculation interface
 export interface RouteCalculation {
   distance: number;

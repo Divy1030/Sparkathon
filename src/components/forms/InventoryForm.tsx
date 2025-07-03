@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Minus, Save, Trash2, Package, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { apiClient } from '@/lib/apiUtils';
+import { Plus, Minus, Save, Trash2, Package, TrendingUp, TrendingDown, AlertTriangle, RefreshCw } from 'lucide-react';
+import { apiClient } from '../../lib/apiUtils';
 
 interface Product {
   _id: string;
