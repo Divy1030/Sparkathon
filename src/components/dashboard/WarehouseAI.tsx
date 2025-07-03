@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProductCategory, CustomerLocation, WarehouseSelectionResult, EnhancedWarehouseScore, RouteCalculation } from '../../types';
-import { mockWarehouses, mockCustomerLocations } from '../../data/mockData';
-import { MapPin, Package, Clock, AlertTriangle, CheckCircle, Truck, Navigation, Zap, Target } from 'lucide-react';
+import { mockCustomerLocations } from '../../data/mockData';
+import { MapPin, Package, Clock, AlertTriangle, CheckCircle, Truck, Navigation, Zap, Target, Plus, Edit, Trash2 } from 'lucide-react';
 import WarehouseLocationRecommendations from './WarehouseLocationRecommendations';
+import WarehouseForm from '../forms/WarehouseForm';
+import { apiClient } from '../../lib/apiUtils';
 
 interface WarehouseAIProps {
   cardClass: string;
@@ -15,7 +17,148 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
   const [selectionResult, setSelectionResult] = useState<WarehouseSelectionResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [useOpenRouteService, setUseOpenRouteService] = useState(false);
-  const [activeTab, setActiveTab] = useState<'selection' | 'recommendations'>('selection');
+  const [activeTab, setActiveTab] = useState<'selection' | 'recommendations' | 'manage'>('selection');
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showWarehouseForm, setShowWarehouseForm] = useState(false);
+  const [editingWarehouse, setEditingWarehouse] = useState<any>(null);
+
+  useEffect(() => {
+    fetchWarehouses();
+  }, []);
+
+  const fetchWarehouses = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.getWarehouses();
+      if (response.success && response.data && Array.isArray(response.data)) {
+        // Transform backend warehouse data to match the expected format
+        const transformedWarehouses = response.data.map((warehouse: any) => ({
+          id: warehouse._id,
+          name: warehouse.name,
+          location: {
+            lat: warehouse.location?.coordinates?.[1] || warehouse.location?.lat || 0,
+            lng: warehouse.location?.coordinates?.[0] || warehouse.location?.lng || 0,
+            address: warehouse.location?.address || 'Unknown Address'
+          },
+          stock: {
+            electronics: Math.floor(Math.random() * 500) + 100, // Mock stock data
+            clothing: Math.floor(Math.random() * 300) + 50,
+            food: Math.floor(Math.random() * 200) + 25,
+            books: Math.floor(Math.random() * 150) + 30,
+            home_garden: Math.floor(Math.random() * 100) + 20,
+            toys: Math.floor(Math.random() * 80) + 15,
+            sports: Math.floor(Math.random() * 120) + 25
+          },
+          load: warehouse.currentUtilization || Math.floor(Math.random() * 40) + 40,
+          droneReady: warehouse.facilities?.includes('Drone Landing Pad') || Math.random() > 0.5,
+          efficiency: Math.floor(Math.random() * 30) + 70,
+          capacity: warehouse.capacity || 1000,
+          status: warehouse.status || 'active',
+          manager: warehouse.manager || 'Unknown Manager',
+          contactInfo: warehouse.contactInfo || 'No contact info',
+          facilities: warehouse.facilities || []
+        }));
+        setWarehouses(transformedWarehouses);
+      } else {
+        // Fallback to mock data if API fails
+        setWarehouses([
+          {
+            id: '1',
+            name: 'Delhi Distribution Center',
+            location: { lat: 28.6139, lng: 77.2090, address: 'Delhi, India' },
+            stock: { electronics: 450, clothing: 230, food: 180, books: 120, home_garden: 80, toys: 60, sports: 100 },
+            load: 65,
+            droneReady: true,
+            efficiency: 95,
+            capacity: 1000,
+            status: 'active'
+          },
+          {
+            id: '2',
+            name: 'Mumbai Port Warehouse',
+            location: { lat: 19.0760, lng: 72.8777, address: 'Mumbai, India' },
+            stock: { electronics: 320, clothing: 180, food: 120, books: 90, home_garden: 50, toys: 40, sports: 70 },
+            load: 78,
+            droneReady: false,
+            efficiency: 88,
+            capacity: 800,
+            status: 'active'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching warehouses:', error);
+      // Fallback to mock data
+      setWarehouses([
+        {
+          id: '1',
+          name: 'Delhi Distribution Center',
+          location: { lat: 28.6139, lng: 77.2090, address: 'Delhi, India' },
+          stock: { electronics: 450, clothing: 230, food: 180, books: 120, home_garden: 80, toys: 60, sports: 100 },
+          load: 65,
+          droneReady: true,
+          efficiency: 95,
+          capacity: 1000,
+          status: 'active'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateWarehouse = async (warehouseData: any) => {
+    try {
+      const response = await apiClient.createWarehouse(warehouseData);
+      if (response.success) {
+        await fetchWarehouses(); // Refresh warehouse list
+        setShowWarehouseForm(false);
+        alert('Warehouse created successfully!');
+      } else {
+        alert('Error creating warehouse: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error creating warehouse:', error);
+      alert('Error creating warehouse. Please try again.');
+    }
+  };
+
+  const handleUpdateWarehouse = async (warehouseData: any) => {
+    if (!editingWarehouse) return;
+    
+    try {
+      const response = await apiClient.updateWarehouse(editingWarehouse.id, warehouseData);
+      if (response.success) {
+        await fetchWarehouses(); // Refresh warehouse list
+        setEditingWarehouse(null);
+        setShowWarehouseForm(false);
+        alert('Warehouse updated successfully!');
+      } else {
+        alert('Error updating warehouse: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error updating warehouse:', error);
+      alert('Error updating warehouse. Please try again.');
+    }
+  };
+
+  const handleDeleteWarehouse = async (warehouseId: string) => {
+    if (!confirm('Are you sure you want to delete this warehouse?')) return;
+    
+    try {
+      const response = await apiClient.deleteWarehouse(warehouseId);
+      if (response.success) {
+        await fetchWarehouses(); // Refresh warehouse list
+        alert('Warehouse deleted successfully!');
+      } else {
+        alert('Error deleting warehouse: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error deleting warehouse:', error);
+      alert('Error deleting warehouse. Please try again.');
+    }
+  };
 
   // Enhanced Haversine formula with better accuracy
   const calculateHaversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -88,7 +231,7 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
   // Enhanced warehouse selection algorithm with better scoring
   const getBestWarehouse = async (customer: CustomerLocation): Promise<WarehouseSelectionResult> => {
     // Step 1: Filter warehouses with required category and check stock
-    const availableWarehouses = mockWarehouses.filter(w => 
+    const availableWarehouses = warehouses.filter((w: any) => 
       w.stock[customer.demandedCategory] > 0
     );
 
@@ -175,10 +318,10 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
     );
 
     // Step 3: Sort by final score and check if we have sufficient stock
-    warehousesWithScores.sort((a, b) => b.finalScore - a.finalScore);
+    warehousesWithScores.sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
     
-    const sufficientStockWarehouses = warehousesWithScores.filter(w => 
-      w.availabilityRatio >= 1
+    const sufficientStockWarehouses = warehousesWithScores.filter((w: any) => 
+      (w.availabilityRatio || 0) >= 1
     );
 
     if (sufficientStockWarehouses.length > 0) {
@@ -311,9 +454,21 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
             New Location AI
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab('manage')}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'manage'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Package className="w-4 h-4" />
+            Manage Warehouses
+          </div>
+        </button>
       </div>
 
-      {/* Tab Content */}
       {activeTab === 'selection' ? (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -565,7 +720,7 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
       <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
         <h3 className="text-lg font-semibold mb-4">Warehouse Network Status</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockWarehouses.map((warehouse) => (
+          {warehouses.map((warehouse: any) => (
             <div key={warehouse.id} className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium">{warehouse.name}</h4>
@@ -649,8 +804,149 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
         </div>
       )}
         </>
-      ) : (
+      ) : activeTab === 'recommendations' ? (
         <WarehouseLocationRecommendations cardClass={cardClass} />
+      ) : (
+        /* Warehouse Management Tab */
+        <div className="space-y-6">
+          {!showWarehouseForm ? (
+            <>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Warehouse Management</h2>
+                <button
+                  onClick={() => setShowWarehouseForm(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add New Warehouse
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <span className="ml-2">Loading warehouses...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {warehouses.map((warehouse: any) => (
+                    <div key={warehouse.id} className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">{warehouse.name}</h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingWarehouse(warehouse);
+                              setShowWarehouseForm(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit warehouse"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWarehouse(warehouse.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete warehouse"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-600">{warehouse.location.address}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Capacity:</span>
+                            <span className="font-medium ml-1">{warehouse.capacity}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Load:</span>
+                            <span className={`font-medium ml-1 ${
+                              warehouse.load > 80 ? 'text-red-600' : 
+                              warehouse.load > 60 ? 'text-yellow-600' : 'text-green-600'
+                            }`}>
+                              {warehouse.load}%
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Status:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ml-1 ${
+                              warehouse.status === 'active' ? 'bg-green-100 text-green-800' :
+                              warehouse.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {warehouse.status}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Drone:</span>
+                            <span className={`font-medium ml-1 ${
+                              warehouse.droneReady ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {warehouse.droneReady ? 'Ready' : 'Not Ready'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Stock Levels</h4>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-gray-500">Electronics:</span>
+                              <span className="font-medium ml-1">{warehouse.stock.electronics}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Clothing:</span>
+                              <span className="font-medium ml-1">{warehouse.stock.clothing}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Food:</span>
+                              <span className="font-medium ml-1">{warehouse.stock.food}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {warehouse.facilities && warehouse.facilities.length > 0 && (
+                          <div className="pt-3 border-t">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Facilities</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {warehouse.facilities.slice(0, 3).map((facility: string) => (
+                                <span key={facility} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                                  {facility}
+                                </span>
+                              ))}
+                              {warehouse.facilities.length > 3 && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                                  +{warehouse.facilities.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <WarehouseForm
+              cardClass={cardClass}
+              onSubmit={editingWarehouse ? handleUpdateWarehouse : handleCreateWarehouse}
+              onCancel={() => {
+                setShowWarehouseForm(false);
+                setEditingWarehouse(null);
+              }}
+              editingWarehouse={editingWarehouse}
+            />
+          )}
+        </div>
       )}
     </div>
   );

@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1'}/suppliers/reliability${queryString ? `?${queryString}` : ''}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1'}/suppliers/reliability${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
         headers: {
