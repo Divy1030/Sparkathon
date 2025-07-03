@@ -1,5 +1,5 @@
 // Use the environment variable for the API base URL with fallback
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Log the API URL for debugging
 console.log('Using API base URL:', API_BASE_URL);
@@ -70,6 +70,26 @@ const endpoints = {
     resolve: (id: string) => `${API_BASE_URL}/defect-reports/${id}/resolve`,
     getAnalytics: `${API_BASE_URL}/defect-reports/analytics`,
     getSupplierSummary: (supplierId: string) => `${API_BASE_URL}/defect-reports/supplier/${supplierId}/summary`,
+  },
+  shipment: {
+    create: `${API_BASE_URL}/shipments`,
+    getAll: `${API_BASE_URL}/shipments`,
+    getById: (id: string) => `${API_BASE_URL}/shipments/${id}`,
+    update: (id: string) => `${API_BASE_URL}/shipments/${id}`,
+    updateStatus: (id: string) => `${API_BASE_URL}/shipments/${id}/status`,
+    delete: (id: string) => `${API_BASE_URL}/shipments/${id}`,
+    getActive: `${API_BASE_URL}/shipments/active`,
+    getAnalytics: `${API_BASE_URL}/shipments/analytics`,
+  },
+  alert: {
+    create: `${API_BASE_URL}/alerts`,
+    getAll: `${API_BASE_URL}/alerts`,
+    getById: (id: string) => `${API_BASE_URL}/alerts/${id}`,
+    resolve: (id: string) => `${API_BASE_URL}/alerts/${id}/resolve`,
+    bulkResolve: `${API_BASE_URL}/alerts/bulk-resolve`,
+    delete: (id: string) => `${API_BASE_URL}/alerts/${id}`,
+    getAnalytics: `${API_BASE_URL}/alerts/analytics`,
+    generateSystemAlerts: `${API_BASE_URL}/alerts/generate-system-alerts`,
   },
 };
 

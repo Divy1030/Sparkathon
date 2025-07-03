@@ -16,7 +16,6 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { NavItem } from '../types';
-import { mockAlerts } from '../data/mockData';
 import DashboardOverview from '../components/dashboard/DashboardOverview';
 import InventoryForecasting from '../components/dashboard/InventoryForecasting';
 import SupplierReliability from '../components/dashboard/SupplierReliability';
@@ -31,7 +30,6 @@ import ReportsPage from '../components/dashboard/ReportsPage';
 export default function SupplyChainDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
-  const [alerts, setAlerts] = useState(mockAlerts);
   const [inventoryDropdownOpen, setInventoryDropdownOpen] = useState(false);
 
   const navItems: NavItem[] = [
@@ -44,12 +42,6 @@ export default function SupplyChainDashboard() {
     { id: 'reports', name: 'Reports & Insights', icon: FileText }
   ];
 
-  const resolveAlert = (alertId: number) => {
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId ? { ...alert, resolved: true } : alert
-    ));
-  };
-
   const bgClass = darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900';
   const sidebarClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900';
@@ -59,9 +51,7 @@ export default function SupplyChainDashboard() {
       case 'dashboard':
         return (
           <DashboardOverview 
-            cardClass={cardClass} 
-            alerts={alerts} 
-            resolveAlert={resolveAlert} 
+            cardClass={cardClass}
           />
         );
       case 'forecasting':
@@ -79,9 +69,7 @@ export default function SupplyChainDashboard() {
       case 'alerts':
         return (
           <AlertsPage 
-            cardClass={cardClass} 
-            alerts={alerts} 
-            resolveAlert={resolveAlert} 
+            cardClass={cardClass}
           />
         );
       case 'reports':
@@ -89,9 +77,7 @@ export default function SupplyChainDashboard() {
       default:
         return (
           <DashboardOverview 
-            cardClass={cardClass} 
-            alerts={alerts} 
-            resolveAlert={resolveAlert} 
+            cardClass={cardClass}
           />
         );
     }
