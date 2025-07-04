@@ -21,10 +21,11 @@ import InventoryForecasting from '../components/dashboard/InventoryForecasting';
 import SupplierReliability from '../components/dashboard/SupplierReliability';
 import LastMileDelivery from '../components/dashboard/LastMileDelivery';
 import WarehouseAI from '../components/dashboard/WarehouseAI';
-import PurchaseManagement from '../components/dashboard/PurchaseManagement';
+import PurchaseOrderManager from '../components/purchase/PurchaseOrderManager';
 import MapSimulation from '../components/dashboard/MapSimulation';
 import AlertsPage from '../components/dashboard/AlertsPage';
 import ReportsPage from '../components/dashboard/ReportsPage';
+import IntegratedSupplyChainDashboard from '../components/dashboard/SupplyChainDashboard';
 
 // Main Dashboard Component
 export default function SupplyChainDashboard() {
@@ -34,6 +35,7 @@ export default function SupplyChainDashboard() {
 
   const navItems: NavItem[] = [
     { id: 'dashboard', name: 'Dashboard Overview', icon: Home },
+    { id: 'supply-chain', name: 'Supply Chain Management', icon: ShoppingCart },
     { id: 'forecasting', name: 'Inventory Forecasting', icon: Package },
     { id: 'suppliers', name: 'Supplier Reliability', icon: Users },
     { id: 'delivery', name: 'Last-Mile Delivery', icon: Truck },
@@ -54,6 +56,8 @@ export default function SupplyChainDashboard() {
             cardClass={cardClass}
           />
         );
+      case 'supply-chain':
+        return <IntegratedSupplyChainDashboard />;
       case 'forecasting':
         return <InventoryForecasting cardClass={cardClass} />;
       case 'suppliers':
@@ -63,7 +67,7 @@ export default function SupplyChainDashboard() {
       case 'warehouse-ai':
         return <WarehouseAI cardClass={cardClass} />;
       case 'purchase':
-        return <PurchaseManagement cardClass={cardClass} />;
+        return <PurchaseOrderManager />;
       case 'map':
         return <MapSimulation cardClass={cardClass} darkMode={darkMode} />;
       case 'alerts':

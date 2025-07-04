@@ -153,35 +153,35 @@ export class ApiClient {
 
   // Warehouse APIs
   async getWarehouses() {
-    return this.makeRequest('/warehouse');
+    return this.makeRequest('/v1/warehouses');
   }
 
   async createWarehouse(warehouseData: any) {
-    return this.makeRequest('/warehouse', {
+    return this.makeRequest('/v1/warehouses', {
       method: 'POST',
       body: JSON.stringify(warehouseData),
     });
   }
 
   async updateWarehouse(warehouseId: string, warehouseData: any) {
-    return this.makeRequest(`/warehouse/${warehouseId}`, {
+    return this.makeRequest(`/v1/warehouses/${warehouseId}`, {
       method: 'PUT',
       body: JSON.stringify(warehouseData),
     });
   }
 
   async deleteWarehouse(warehouseId: string) {
-    return this.makeRequest(`/warehouse/${warehouseId}`, {
+    return this.makeRequest(`/v1/warehouses/${warehouseId}`, {
       method: 'DELETE',
     });
   }
 
   async getWarehouseById(warehouseId: string) {
-    return this.makeRequest(`/warehouse/${warehouseId}`);
+    return this.makeRequest(`/v1/warehouses/${warehouseId}`);
   }
 
   async getWarehouseUtilization(warehouseId: string) {
-    return this.makeRequest(`/warehouse/${warehouseId}/utilization`);
+    return this.makeRequest(`/v1/warehouses/${warehouseId}/utilization`);
   }
 
   // Inventory APIs
@@ -378,6 +378,47 @@ export class ApiClient {
   async getDefectAnalytics() {
     return this.makeRequest('/defect-reports/analytics');
   }
+
+  // Supply Chain APIs
+  async getSupplyChainDashboard(): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>('/v1/supply-chain/dashboard');
+  }
+
+  async updateWarehouseCategoryCapacity(warehouseId: string, data: { category: string; maxCapacity: number }): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>(`/v1/supply-chain/warehouse/${warehouseId}/category-capacity`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async getWarehouseCategoryCapacities(warehouseId: string): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>(`/v1/supply-chain/warehouse/${warehouseId}/category-capacities`);
+  }
+
+  async processPurchaseDelivery(purchaseId: string): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>(`/v1/supply-chain/purchase/${purchaseId}/delivery`, {
+      method: 'POST'
+    });
+  }
+
+  async generateAutoPurchaseOrders(): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>('/v1/supply-chain/auto-purchase-orders', {
+      method: 'POST'
+    });
+  }
+
+  async processCustomerOrder(orderData: any): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>('/v1/supply-chain/customer-order', {
+      method: 'POST',
+      body: JSON.stringify(orderData)
+    });
+  }
+
+  async fulfillCustomerOrder(orderId: string): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>(`/v1/supply-chain/customer-order/${orderId}/fulfill`, {
+      method: 'POST'
+    });
+  }
 }
 
 // Export singleton instance
@@ -415,4 +456,11 @@ export const {
   updateDefectReportStatus,
   resolveDefectReport,
   getDefectAnalytics,
+  getSupplyChainDashboard,
+  updateWarehouseCategoryCapacity,
+  getWarehouseCategoryCapacities,
+  processPurchaseDelivery,
+  generateAutoPurchaseOrders,
+  processCustomerOrder,
+  fulfillCustomerOrder,
 } = apiClient;

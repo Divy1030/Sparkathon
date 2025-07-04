@@ -20,8 +20,16 @@ interface WarehouseFormData {
       lng: number;
     };
   };
-  capacity: number;
-  currentUtilization: number;
+  capacity: number; // Total warehouse capacity (user-defined)
+  categoryCapacities: {
+    electronics: number;
+    clothing: number;
+    food: number;
+    books: number;
+    home_garden: number;
+    toys: number;
+    sports: number;
+  };
   status: 'active' | 'inactive' | 'maintenance';
   manager: {
     name: string;
@@ -54,8 +62,16 @@ const WarehouseForm: React.FC<WarehouseFormProps> = ({
         lng: editingWarehouse?.location?.coordinates?.lng || 0,
       }
     },
-    capacity: editingWarehouse?.capacity || 1000,
-    currentUtilization: editingWarehouse?.currentUtilization || 0,
+    capacity: editingWarehouse?.capacity || 1000, // Total warehouse capacity
+    categoryCapacities: {
+      electronics: editingWarehouse?.categoryCapacities?.electronics?.max || 100,
+      clothing: editingWarehouse?.categoryCapacities?.clothing?.max || 150,
+      food: editingWarehouse?.categoryCapacities?.food?.max || 100,
+      books: editingWarehouse?.categoryCapacities?.books?.max || 80,
+      home_garden: editingWarehouse?.categoryCapacities?.home_garden?.max || 60,
+      toys: editingWarehouse?.categoryCapacities?.toys?.max || 50,
+      sports: editingWarehouse?.categoryCapacities?.sports?.max || 70,
+    },
     status: editingWarehouse?.status || 'active',
     manager: {
       name: editingWarehouse?.manager?.name || '',
@@ -125,14 +141,6 @@ const WarehouseForm: React.FC<WarehouseFormProps> = ({
       newErrors.state = 'State is required';
     }
 
-    if (formData.capacity <= 0) {
-      newErrors.capacity = 'Capacity must be greater than 0';
-    }
-
-    if (formData.currentUtilization < 0 || formData.currentUtilization > 100) {
-      newErrors.currentUtilization = 'Utilization must be between 0 and 100';
-    }
-
     if (!formData.manager.name.trim()) {
       newErrors.managerName = 'Manager name is required';
     }
@@ -185,7 +193,45 @@ const WarehouseForm: React.FC<WarehouseFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
+      // Transform the form data to match the backend schema
+      const transformedData: any = {
+        ...formData,
+        // Transform category capacities from simple numbers to objects with max/current
+        categoryCapacities: {
+          electronics: { 
+            max: formData.categoryCapacities.electronics, 
+            current: editingWarehouse?.categoryCapacities?.electronics?.current || 0 
+          },
+          clothing: { 
+            max: formData.categoryCapacities.clothing, 
+            current: editingWarehouse?.categoryCapacities?.clothing?.current || 0 
+          },
+          food: { 
+            max: formData.categoryCapacities.food, 
+            current: editingWarehouse?.categoryCapacities?.food?.current || 0 
+          },
+          books: { 
+            max: formData.categoryCapacities.books, 
+            current: editingWarehouse?.categoryCapacities?.books?.current || 0 
+          },
+          home_garden: { 
+            max: formData.categoryCapacities.home_garden, 
+            current: editingWarehouse?.categoryCapacities?.home_garden?.current || 0 
+          },
+          toys: { 
+            max: formData.categoryCapacities.toys, 
+            current: editingWarehouse?.categoryCapacities?.toys?.current || 0 
+          },
+          sports: { 
+            max: formData.categoryCapacities.sports, 
+            current: editingWarehouse?.categoryCapacities?.sports?.current || 0 
+          }
+        }
+      };
+
+      // Don't auto-calculate capacity - let user set it manually
+
+      await onSubmit(transformedData);
     } catch (error) {
       console.error('Error submitting warehouse form:', error);
     } finally {
@@ -459,59 +505,8 @@ const WarehouseForm: React.FC<WarehouseFormProps> = ({
           </div>
         </div>
 
-        {/* Capacity and Utilization */}
+        {/* Status */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Capacity (units) *
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.capacity}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                capacity: parseInt(e.target.value) || 0 
-              }))}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                errors.capacity ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="1000"
-            />
-            {errors.capacity && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.capacity}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Current Utilization (%) *
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.currentUtilization}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                currentUtilization: parseInt(e.target.value) || 0 
-              }))}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                errors.currentUtilization ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="75"
-            />
-            {errors.currentUtilization && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.currentUtilization}
-              </p>
-            )}
-          </div>
-
           <div>
             <label className="block text-sm font-medium mb-2">Status</label>
             <select
@@ -526,6 +521,152 @@ const WarehouseForm: React.FC<WarehouseFormProps> = ({
               <option value="inactive">Inactive</option>
               <option value="maintenance">Maintenance</option>
             </select>
+          </div>
+          <div className="md:col-span-2">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Note:</strong> Total capacity and utilization are automatically calculated based on category capacities and current inventory levels.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Capacities */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Category Capacities
+          </h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Set maximum capacity for each product category. This helps with category-based inventory management.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Electronics</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.electronics}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    electronics: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Clothing</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.clothing}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    clothing: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Food & Beverages</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.food}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    food: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="150"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Books</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.books}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    books: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="80"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Home & Garden</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.home_garden}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    home_garden: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="60"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Toys</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.toys}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    toys: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="40"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Sports</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.categoryCapacities.sports}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  categoryCapacities: {
+                    ...prev.categoryCapacities,
+                    sports: parseInt(e.target.value) || 0
+                  }
+                }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="50"
+              />
+            </div>
           </div>
         </div>
 

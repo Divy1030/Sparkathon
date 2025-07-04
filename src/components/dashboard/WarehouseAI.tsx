@@ -5,7 +5,7 @@ import { MapPin, Package, Clock, AlertTriangle, CheckCircle, Truck, Navigation, 
 import WarehouseLocationRecommendations from './WarehouseLocationRecommendations';
 import WarehouseForm from '../forms/WarehouseForm';
 import InventoryForm from '../forms/InventoryForm';
-import PurchaseOrderTest from './PurchaseOrderTest';
+import WarehouseManagement from '../warehouse/WarehouseManagement';
 import { apiClient } from '../../lib/apiUtils';
 
 interface WarehouseAIProps {
@@ -19,11 +19,12 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
   const [selectionResult, setSelectionResult] = useState<WarehouseSelectionResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [useOpenRouteService, setUseOpenRouteService] = useState(false);
-  const [activeTab, setActiveTab] = useState<'selection' | 'recommendations' | 'manage' | 'inventory' | 'test'>('selection');
+  const [activeTab, setActiveTab] = useState<'selection' | 'recommendations' | 'manage' | 'inventory'>('selection');
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showWarehouseForm, setShowWarehouseForm] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<any>(null);
+  const [selectedWarehouseForManagement, setSelectedWarehouseForManagement] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWarehouses();
@@ -44,13 +45,13 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
             address: warehouse.location?.address || 'Unknown Address'
           },
           stock: {
-            electronics: Math.floor(Math.random() * 500) + 100, // Mock stock data
-            clothing: Math.floor(Math.random() * 300) + 50,
-            food: Math.floor(Math.random() * 200) + 25,
-            books: Math.floor(Math.random() * 150) + 30,
-            home_garden: Math.floor(Math.random() * 100) + 20,
-            toys: Math.floor(Math.random() * 80) + 15,
-            sports: Math.floor(Math.random() * 120) + 25
+            electronics: warehouse.categoryCapacities?.electronics?.current || warehouse.inventorySummary?.categoryCounts?.electronics || 0,
+            clothing: warehouse.categoryCapacities?.clothing?.current || warehouse.inventorySummary?.categoryCounts?.clothing || 0,
+            food: warehouse.categoryCapacities?.food?.current || warehouse.inventorySummary?.categoryCounts?.food || 0,
+            books: warehouse.categoryCapacities?.books?.current || warehouse.inventorySummary?.categoryCounts?.books || 0,
+            home_garden: warehouse.categoryCapacities?.home_garden?.current || warehouse.inventorySummary?.categoryCounts?.home_garden || 0,
+            toys: warehouse.categoryCapacities?.toys?.current || warehouse.inventorySummary?.categoryCounts?.toys || 0,
+            sports: warehouse.categoryCapacities?.sports?.current || warehouse.inventorySummary?.categoryCounts?.sports || 0
           },
           load: warehouse.currentUtilization || Math.floor(Math.random() * 40) + 40,
           droneReady: warehouse.facilities?.includes('Drone Landing Pad') || Math.random() > 0.5,
@@ -482,19 +483,6 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
             Inventory Management
           </div>
         </button>
-        <button
-          onClick={() => setActiveTab('test')}
-          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'test'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Test Orders
-          </div>
-        </button>
       </div>
 
       {activeTab === 'selection' ? (
@@ -836,149 +824,9 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
         <WarehouseLocationRecommendations cardClass={cardClass} />
       ) : activeTab === 'inventory' ? (
         <InventoryManagementTab warehouses={warehouses} cardClass={cardClass} />
-      ) : activeTab === 'test' ? (
-        <PurchaseOrderTest cardClass={cardClass} />
       ) : (
-        /* Warehouse Management Tab */
-        <div className="space-y-6">
-          {!showWarehouseForm ? (
-            <>
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Warehouse Management</h2>
-                <button
-                  onClick={() => setShowWarehouseForm(true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add New Warehouse
-                </button>
-              </div>
-
-              {loading ? (
-                <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                  <span className="ml-2">Loading warehouses...</span>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {warehouses.map((warehouse: any) => (
-                    <div key={warehouse.id} className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold">{warehouse.name}</h3>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingWarehouse(warehouse);
-                              setShowWarehouseForm(true);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit warehouse"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteWarehouse(warehouse.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete warehouse"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-600">{warehouse.location.address}</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-500">Capacity:</span>
-                            <span className="font-medium ml-1">{warehouse.capacity}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Load:</span>
-                            <span className={`font-medium ml-1 ${
-                              warehouse.load > 80 ? 'text-red-600' : 
-                              warehouse.load > 60 ? 'text-yellow-600' : 'text-green-600'
-                            }`}>
-                              {warehouse.load}%
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Status:</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ml-1 ${
-                              warehouse.status === 'active' ? 'bg-green-100 text-green-800' :
-                              warehouse.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {warehouse.status}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Drone:</span>
-                            <span className={`font-medium ml-1 ${
-                              warehouse.droneReady ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {warehouse.droneReady ? 'Ready' : 'Not Ready'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-3 border-t">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Stock Levels</h4>
-                          <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div>
-                              <span className="text-gray-500">Electronics:</span>
-                              <span className="font-medium ml-1">{warehouse.stock.electronics}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Clothing:</span>
-                              <span className="font-medium ml-1">{warehouse.stock.clothing}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Food:</span>
-                              <span className="font-medium ml-1">{warehouse.stock.food}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {warehouse.facilities && warehouse.facilities.length > 0 && (
-                          <div className="pt-3 border-t">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Facilities</h4>
-                            <div className="flex flex-wrap gap-1">
-                              {warehouse.facilities.slice(0, 3).map((facility: string) => (
-                                <span key={facility} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                                  {facility}
-                                </span>
-                              ))}
-                              {warehouse.facilities.length > 3 && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                                  +{warehouse.facilities.length - 3} more
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <WarehouseForm
-              cardClass={cardClass}
-              onSubmit={editingWarehouse ? handleUpdateWarehouse : handleCreateWarehouse}
-              onCancel={() => {
-                setShowWarehouseForm(false);
-                setEditingWarehouse(null);
-              }}
-              editingWarehouse={editingWarehouse}
-            />
-          )}
-        </div>
+        /* Comprehensive Warehouse Management */
+        <WarehouseManagement cardClass={cardClass} />
       )}
     </div>
   );
