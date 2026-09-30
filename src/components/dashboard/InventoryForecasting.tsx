@@ -1,102 +1,52 @@
-import React from 'react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-// import { InventoryItem, DemandForecast } from '../../types';
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, Boxes, PackagePlus, Search, SlidersHorizontal } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
 import { mockInventoryData, mockDemandForecast } from '../../data/mockData';
+import { InventoryItem } from '../../types';
+import { api } from '../../lib/api';
 
-interface InventoryForecastingProps {
-  cardClass: string;
+interface InventoryForecastingProps { cardClass: string; inventory?: InventoryItem[]; darkMode?: boolean; }
+
+export default function InventoryForecasting({ cardClass, inventory, darkMode = false }: InventoryForecastingProps) {
+  const inventoryData = inventory?.length ? inventory : mockInventoryData;
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
+  const [adjustment, setAdjustment] = useState('');
+  const [reason, setReason] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const rows = useMemo(() => inventoryData.filter((item) => {
+    const current = item.availableQuantity ?? item.current ?? 0;
+    const status = item.status || (current <= item.reorderLevel ? 'low_stock' : 'in_stock');
+    return item.product.toLowerCase().includes(search.toLowerCase()) && (statusFilter === 'all' || status === statusFilter);
+  }), [inventoryData, search, statusFilter]);
+  const lowStock = inventoryData.filter((item) => (item.availableQuantity ?? item.current ?? 0) <= item.reorderLevel).length;
+  const totalUnits = inventoryData.reduce((sum, item) => sum + (item.availableQuantity ?? item.current ?? 0), 0);
+  const chartData = inventory?.length ? inventory.slice(0, 10).map((item) => ({ name: item.product.slice(0, 12), available: item.availableQuantity ?? item.current ?? 0, reorder: item.reorderLevel })) : mockDemandForecast.map((item) => ({ name: item.month, available: item.actual, reorder: item.predicted }));
+
+  const saveAdjustment = async (item: InventoryItem) => {
+    if (!item.id) { setActionMessage('Live inventory IDs are required for adjustments.'); return; }
+    const parsedAdjustment = Number(adjustment);
+    if (!Number.isInteger(parsedAdjustment) || parsedAdjustment === 0 || !reason.trim()) { setActionMessage('Enter a non-zero whole-number adjustment and a reason.'); return; }
+    setSavingId(item.id); setActionMessage(null);
+    try { await api.adjustInventory(item.id, parsedAdjustment, reason.trim()); setActionMessage(`Stock updated for ${item.product}. Refreshing live inventory…`); window.location.reload(); }
+    catch (error) { setActionMessage(error instanceof Error ? error.message : 'Unable to update inventory.'); }
+    finally { setSavingId(null); }
+  };
+
+  return <div className="space-y-6">
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Inventory control</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Inventory forecasting</h1><p className="mt-2 text-sm text-slate-500">Know what is available now, what is at risk, and what needs replenishment.</p></div><div className="flex items-center gap-2 text-sm text-slate-500"><Boxes className="h-4 w-4" />{inventory?.length ? 'Live inventory' : 'Demo inventory'}</div></div>
+    {actionMessage && <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">{actionMessage}</div>}
+
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3"><MetricCard cardClass={cardClass} label="Total available" value={totalUnits.toLocaleString()} caption="Units across all facilities" icon={<Boxes className="h-5 w-5" />} tone="blue" /><MetricCard cardClass={cardClass} label="Items to reorder" value={String(lowStock)} caption={lowStock ? 'Needs purchasing attention' : 'Stock is above thresholds'} icon={<AlertTriangle className="h-5 w-5" />} tone={lowStock ? 'amber' : 'green'} /><MetricCard cardClass={cardClass} label="Tracked products" value={String(inventoryData.length)} caption="SKUs in the live catalog" icon={<PackagePlus className="h-5 w-5" />} tone="cyan" /></div>
+
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_1fr]"><Panel cardClass={cardClass} title="Stock position" subtitle="Available units compared with reorder levels"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }} barGap={7}><CartesianGrid vertical={false} stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="name" tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ borderRadius: 12, border: 0, background: darkMode ? '#172033' : '#0f172a', color: '#fff' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} /><Bar name="Available" dataKey="available" fill="#14b8a6" radius={[5, 5, 0, 0]} /><Bar name="Reorder level" dataKey="reorder" fill="#f59e0b" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer></div></Panel><Panel cardClass={cardClass} title="Demand outlook" subtitle="Forecast signal for planning decisions"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><AreaChart data={mockDemandForecast} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}><defs><linearGradient id="demandActual" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#14b8a6" stopOpacity={0.35} /><stop offset="100%" stopColor="#14b8a6" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="month" tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ borderRadius: 12, border: 0, background: darkMode ? '#172033' : '#0f172a', color: '#fff' }} /><Area type="monotone" name="Actual demand" dataKey="actual" stroke="#14b8a6" fill="url(#demandActual)" strokeWidth={3} /><Area type="monotone" name="Forecast" dataKey="predicted" stroke="#f59e0b" fill="none" strokeDasharray="5 5" strokeWidth={2} /></AreaChart></ResponsiveContainer></div></Panel></div>
+
+    <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="text-lg font-semibold tracking-tight">Inventory register</h2><p className="mt-1 text-sm text-slate-500">Adjustments are recorded in the backend movement ledger.</p></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"><Search className="h-4 w-4 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search product" className="w-full bg-transparent outline-none sm:w-40" /></label><label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"><SlidersHorizontal className="h-4 w-4 text-slate-400" /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="bg-transparent outline-none"><option value="all">All status</option><option value="in_stock">In stock</option><option value="low_stock">Low stock</option><option value="out_of_stock">Out of stock</option></select></label></div></div><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b text-xs uppercase tracking-wide text-slate-500"><th className="p-3">Product</th><th className="p-3">Available</th><th className="p-3">Forecast</th><th className="p-3">Reorder at</th><th className="p-3">Health</th><th className="p-3 text-right">Action</th></tr></thead><tbody>{rows.map((item, index) => { const current = item.availableQuantity ?? item.current ?? 0; const status = item.status || (current <= item.reorderLevel ? 'low_stock' : 'in_stock'); const percentage = Math.min(100, Math.round((current / Math.max(item.reorderLevel, 1)) * 100)); return <tr key={item.id || index} className="border-b transition hover:bg-slate-500/5"><td className="p-3"><div className="font-medium">{item.product}</div><div className="mt-1 text-xs text-slate-500">{item.sku || 'Live product'}</div></td><td className="p-3 font-semibold">{current.toLocaleString()}</td><td className="p-3 text-slate-500">{(item.forecasted ?? 0).toLocaleString()}</td><td className="p-3 text-slate-500">{item.reorderLevel.toLocaleString()}</td><td className="p-3"><div className="flex min-w-32 items-center gap-2"><div className="h-2 flex-1 rounded-full bg-slate-200/70"><div className={`h-2 rounded-full ${status === 'out_of_stock' ? 'bg-rose-500' : status === 'low_stock' ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.max(4, Math.min(100, percentage))}%` }} /></div><span className="text-xs capitalize text-slate-500">{status.replace('_', ' ')}</span></div></td><td className="p-3 text-right">{item.id ? adjustingId === item.id ? <div className="ml-auto flex min-w-56 flex-col gap-2"><input value={adjustment} onChange={(event) => setAdjustment(event.target.value)} type="number" placeholder="+10 or -5" className="rounded-lg border bg-transparent p-2 text-sm" /><input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason" className="rounded-lg border bg-transparent p-2 text-sm" /><div className="flex justify-end gap-2"><button disabled={savingId === item.id} onClick={() => void saveAdjustment(item)} className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50">Save</button><button onClick={() => setAdjustingId(null)} className="rounded-lg border px-3 py-1.5 text-sm">Cancel</button></div></div> : <button onClick={() => { setAdjustingId(item.id || null); setAdjustment(''); setReason(''); setActionMessage(null); }} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700">Adjust stock</button> : <span className="text-xs text-slate-500">Demo only</span>}</td></tr>; })}</tbody></table>{!rows.length && <div className="py-10 text-center text-sm text-slate-500">No inventory matches your filters.</div>}</div></section>
+  </div>;
 }
 
-const InventoryForecasting: React.FC<InventoryForecastingProps> = ({ cardClass }) => {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Inventory Forecasting</h1>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-            <h3 className="text-lg font-semibold mb-4">Demand Prediction</h3>
-            <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={mockDemandForecast}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="actual" stackId="1" stroke="#10B981" fill="#10B981" fillOpacity={0.6} />
-                <Area type="monotone" dataKey="predicted" stackId="2" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Stock Alerts</h3>
-          <div className="space-y-4">
-            {mockInventoryData.map((item, index) => (
-              <div key={index} className={`p-4 rounded-lg border ${
-                item.current < item.reorderLevel ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-              }`}>
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium">{item.product}</h4>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    item.trend === 'up' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {item.trend === 'up' ? '↗' : '↘'} {item.trend}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600">Current: {item.current}</p>
-                <p className="text-sm text-gray-600">Forecasted: {item.forecasted}</p>
-                {item.current < item.reorderLevel && (
-                  <p className="text-sm text-red-600 font-medium mt-1">⚠ Reorder needed</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-        <h3 className="text-lg font-semibold mb-4">Inventory Overview</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-3">Product</th>
-                <th className="text-left p-3">Current Stock</th>
-                <th className="text-left p-3">Forecasted Demand</th>
-                <th className="text-left p-3">Reorder Level</th>
-                <th className="text-left p-3">Status</th>
-                <th className="text-left p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockInventoryData.map((item, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-medium">{item.product}</td>
-                  <td className="p-3">{item.current}</td>
-                  <td className="p-3">{item.forecasted}</td>
-                  <td className="p-3">{item.reorderLevel}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      item.current < item.reorderLevel ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {item.current < item.reorderLevel ? 'Low Stock' : 'Optimal'}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <button className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
-                      {item.current < item.reorderLevel ? 'Reorder' : 'Monitor'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default InventoryForecasting;
+function MetricCard({ cardClass, label, value, caption, icon, tone }: { cardClass: string; label: string; value: string; caption: string; icon: React.ReactNode; tone: 'blue' | 'green' | 'amber' | 'cyan' }) { const colors = { blue: 'bg-blue-500/10 text-blue-500', green: 'bg-emerald-500/10 text-emerald-500', amber: 'bg-amber-500/10 text-amber-500', cyan: 'bg-cyan-500/10 text-cyan-500' }; return <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="flex items-start justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p></div><div className={`rounded-xl p-2.5 ${colors[tone]}`}>{icon}</div></div><p className="mt-3 text-xs text-slate-500">{caption}</p></div>; }
+function Panel({ cardClass, title, subtitle, children }: { cardClass: string; title: string; subtitle: string; children: React.ReactNode }) { return <div className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-4"><h2 className="text-lg font-semibold tracking-tight">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>{children}</div>; }

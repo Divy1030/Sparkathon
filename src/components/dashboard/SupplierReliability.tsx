@@ -1,114 +1,29 @@
-import React from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ScatterChart, Scatter } from 'recharts';
-// import { Supplier } from '../../types';
+import React, { useMemo } from 'react';
+import { Award, CircleAlert, Clock3, DollarSign, ShieldCheck, TrendingDown } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { mockSuppliers } from '../../data/mockData';
+import { Supplier } from '../../types';
 
-interface SupplierReliabilityProps {
-  cardClass: string;
+interface SupplierReliabilityProps { cardClass: string; suppliers?: Supplier[]; darkMode?: boolean; }
+
+export default function SupplierReliability({ cardClass, suppliers, darkMode = false }: SupplierReliabilityProps) {
+  const supplierData = suppliers?.length ? suppliers : mockSuppliers;
+  const ranked = useMemo(() => [...supplierData].sort((a, b) => b.reliabilityScore - a.reliabilityScore), [supplierData]);
+  const averageScore = supplierData.length ? Math.round(supplierData.reduce((sum, supplier) => sum + supplier.reliabilityScore, 0) / supplierData.length) : 0;
+  const averageLead = supplierData.length ? (supplierData.reduce((sum, supplier) => sum + supplier.deliveryTime, 0) / supplierData.length).toFixed(1) : '0';
+  const averageDefect = supplierData.length ? (supplierData.reduce((sum, supplier) => sum + supplier.defectRate, 0) / supplierData.length * 100).toFixed(1) : '0';
+  const chartData = supplierData.map((supplier) => ({ name: supplier.name.split(' ')[0], score: supplier.reliabilityScore, deliveryTime: supplier.deliveryTime, defectRate: supplier.defectRate * 100 }));
+  const chartStyle = { fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 };
+
+  return <div className="space-y-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Partner intelligence</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Supplier reliability</h1><p className="mt-2 text-sm text-slate-500">Compare delivery consistency, quality, and cost before the next purchase decision.</p></div><div className="flex items-center gap-2 text-sm text-slate-500"><ShieldCheck className="h-4 w-4 text-emerald-500" />{suppliers?.length ? 'Live supplier data' : 'Demo supplier data'}</div></div>
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4"><Metric cardClass={cardClass} label="Average reliability" value={`${averageScore}/100`} detail="Across tracked partners" icon={<ShieldCheck className="h-5 w-5" />} tone="green" /><Metric cardClass={cardClass} label="Average lead time" value={`${averageLead} days`} detail="Expected delivery window" icon={<Clock3 className="h-5 w-5" />} tone="blue" /><Metric cardClass={cardClass} label="Average defect rate" value={`${averageDefect}%`} detail="Quality signal" icon={<CircleAlert className="h-5 w-5" />} tone="amber" /><Metric cardClass={cardClass} label="Top performer" value={ranked[0]?.name?.split(' ')[0] || '—'} detail={ranked[0] ? `${ranked[0].reliabilityScore}/100 reliability` : 'No supplier data'} icon={<Award className="h-5 w-5" />} tone="violet" /></div>
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2"><Panel cardClass={cardClass} title="Reliability leaderboard" subtitle="Partner scorecard, highest first"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}><CartesianGrid vertical={false} stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="name" tick={chartStyle} axisLine={false} tickLine={false} /><YAxis domain={[0, 100]} tick={chartStyle} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ borderRadius: 12, border: 0, background: darkMode ? '#172033' : '#0f172a', color: '#fff' }} /><Bar dataKey="score" name="Reliability score" fill="#14b8a6" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div></Panel><Panel cardClass={cardClass} title="Speed vs quality" subtitle="Lower delivery time and defect rate is better"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><ScatterChart margin={{ top: 10, right: 16, left: -8, bottom: 0 }}><CartesianGrid stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="deliveryTime" name="Lead time" unit=" days" tick={chartStyle} /><YAxis dataKey="defectRate" name="Defect rate" unit="%" tick={chartStyle} /><ZAxis dataKey="score" range={[70, 250]} /><Tooltip cursor={{ strokeDasharray: '4 4' }} contentStyle={{ borderRadius: 12, border: 0, background: darkMode ? '#172033' : '#0f172a', color: '#fff' }} /><Scatter name="Suppliers" data={chartData} fill="#8b5cf6" /></ScatterChart></ResponsiveContainer></div></Panel></div>
+    <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-5"><h2 className="text-lg font-semibold">Supplier scorecards</h2><p className="mt-1 text-sm text-slate-500">Operational comparison across all tracked partners.</p></div><div className="grid gap-3">{ranked.map((supplier, index) => <SupplierCard key={supplier.id} supplier={supplier} rank={index + 1} />)}{!ranked.length && <div className="rounded-xl border border-dashed p-10 text-center text-sm text-slate-500">No supplier data available.</div>}</div></section>
+    <section className="grid gap-4 md:grid-cols-3"><Recommendation icon={<TrendingDown className="h-5 w-5" />} title="Quality watch" tone="amber" text={ranked.find((supplier) => supplier.defectRate > 0.08)?.name ? `${ranked.find((supplier) => supplier.defectRate > 0.08)?.name} is above the 8% defect watch threshold.` : 'No suppliers are currently above the defect watch threshold.'} /><Recommendation icon={<Award className="h-5 w-5" />} title="Best partner" tone="green" text={ranked[0] ? `${ranked[0].name} leads the current reliability ranking.` : 'Add suppliers to generate recommendations.'} /><Recommendation icon={<DollarSign className="h-5 w-5" />} title="Buying signal" tone="blue" text="Use reliability, lead time, and cost together before increasing allocation." /></section>
+  </div>;
 }
 
-const SupplierReliability: React.FC<SupplierReliabilityProps> = ({ cardClass }) => {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Supplier Reliability</h1>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Reliability Scores</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={mockSuppliers}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="reliabilityScore" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Performance Metrics</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart data={mockSuppliers}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="deliveryTime" name="Delivery Time" />
-              <YAxis dataKey="defectRate" name="Defect Rate" />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-              <Scatter name="Suppliers" data={mockSuppliers} fill="#8884d8" />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-        <h3 className="text-lg font-semibold mb-4">Supplier Details</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-3">Supplier</th>
-                <th className="text-left p-3">Category</th>
-                <th className="text-left p-3">Delivery Time (days)</th>
-                <th className="text-left p-3">Defect Rate</th>
-                <th className="text-left p-3">Cost ($)</th>
-                <th className="text-left p-3">Reliability Score</th>
-                <th className="text-left p-3">Ranking</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockSuppliers
-                .sort((a, b) => b.reliabilityScore - a.reliabilityScore)
-                .map((supplier, index) => (
-                <tr key={supplier.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-medium">{supplier.name}</td>
-                  <td className="p-3">{supplier.category}</td>
-                  <td className="p-3">{supplier.deliveryTime}</td>
-                  <td className="p-3">{(supplier.defectRate * 100).toFixed(1)}%</td>
-                  <td className="p-3">${supplier.cost}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        supplier.reliabilityScore >= 90 ? 'bg-green-500' :
-                        supplier.reliabilityScore >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}></div>
-                      {supplier.reliabilityScore}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      index < 2 ? 'bg-green-100 text-green-800' :
-                      index >= mockSuppliers.length - 2 ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      #{index + 1}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-        <h3 className="text-lg font-semibold mb-4">AI Recommendations</h3>
-        <div className="space-y-3">
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="font-medium text-green-800">✓ Top Performer</h4>
-            <p className="text-green-700">SecureTransit shows excellent reliability (96%) with low defect rates. Consider increasing order volume.</p>
-          </div>
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <h4 className="font-medium text-red-800">⚠ Performance Issue</h4>
-            <p className="text-red-700">ReliableCargo has high defect rate (12%) and longer delivery times. Consider alternative suppliers.</p>
-          </div>
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-800">💡 Optimization</h4>
-            <p className="text-blue-700">TechFlow Logistics offers good balance of speed and reliability for electronics category.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default SupplierReliability;
+function Metric({ cardClass, label, value, detail, icon, tone }: { cardClass: string; label: string; value: string; detail: string; icon: React.ReactNode; tone: string }) { const color = tone === 'green' ? 'bg-emerald-500/10 text-emerald-500' : tone === 'amber' ? 'bg-amber-500/10 text-amber-500' : tone === 'violet' ? 'bg-violet-500/10 text-violet-500' : 'bg-blue-500/10 text-blue-500'; return <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="flex items-start justify-between"><div><p className="text-xs font-medium uppercase tracking-[0.11em] text-slate-500">{label}</p><p className="mt-3 truncate text-2xl font-semibold">{value}</p></div><div className={`rounded-xl p-2.5 ${color}`}>{icon}</div></div><p className="mt-3 text-xs text-slate-500">{detail}</p></div>; }
+function Panel({ cardClass, title, subtitle, children }: { cardClass: string; title: string; subtitle: string; children: React.ReactNode }) { return <div className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-4"><h2 className="text-lg font-semibold">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>{children}</div>; }
+function SupplierCard({ supplier, rank }: { supplier: Supplier; rank: number }) { const score = supplier.reliabilityScore; return <div className="flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold ${rank === 1 ? 'bg-amber-500/15 text-amber-600' : 'bg-slate-500/10 text-slate-500'}`}>#{rank}</div><div><p className="font-semibold">{supplier.name}</p><p className="mt-1 text-xs text-slate-500">{supplier.category} · {supplier.deliveryTime} days · ${supplier.cost}/unit</p></div></div><div className="flex items-center gap-5"><div className="w-28"><div className="mb-1 flex justify-between text-xs"><span className="text-slate-500">Reliability</span><span className="font-semibold">{score}</span></div><div className="h-2 rounded-full bg-slate-200/70"><div className={`h-2 rounded-full ${score >= 90 ? 'bg-emerald-500' : score >= 80 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${score}%` }} /></div></div><div className="text-right"><p className="text-xs text-slate-500">Defects</p><p className="font-semibold">{(supplier.defectRate * 100).toFixed(1)}%</p></div></div></div>; }
+function Recommendation({ icon, title, text, tone }: { icon: React.ReactNode; title: string; text: string; tone: string }) { const color = tone === 'green' ? 'border-emerald-200 bg-emerald-500/5 text-emerald-700' : tone === 'amber' ? 'border-amber-200 bg-amber-500/5 text-amber-700' : 'border-blue-200 bg-blue-500/5 text-blue-700'; return <div className={`rounded-2xl border p-5 ${color}`}><div className="mb-3 flex items-center gap-2">{icon}<h3 className="font-semibold">{title}</h3></div><p className="text-sm leading-6 opacity-85">{text}</p></div>; }

@@ -1,158 +1,20 @@
-import React from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ScatterChart, Scatter } from 'recharts';
-// import { DeliveryMetric } from '../../types';
+import React, { useMemo } from 'react';
+import { ArrowDownRight, Clock3, Fuel, Gauge, MapPinned, Route, Truck } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { mockDeliveryMetrics } from '../../data/mockData';
 
-interface LastMileDeliveryProps {
-  cardClass: string;
+interface LastMileDeliveryProps { cardClass: string; darkMode?: boolean; }
+
+export default function LastMileDelivery({ cardClass, darkMode = false }: LastMileDeliveryProps) {
+  const routes = mockDeliveryMetrics; const savings = Math.round(routes.reduce((sum, route) => sum + route.savings, 0) / routes.length); const avgTime = Math.round(routes.reduce((sum, route) => sum + route.actualTime, 0) / routes.length); const totalDistance = routes.reduce((sum, route) => sum + route.distance, 0); const chartStyle = { fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }; const tooltipStyle = { borderRadius: 12, border: 0, background: darkMode ? '#172033' : '#0f172a', color: '#fff' };
+  const zones = useMemo(() => [{ name: 'North zone', deliveries: 24, tone: 'blue' }, { name: 'South zone', deliveries: 18, tone: 'green' }, { name: 'East zone', deliveries: 32, tone: 'amber' }, { name: 'West zone', deliveries: 15, tone: 'violet' }], []);
+  return <div className="space-y-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Delivery intelligence</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Last-mile delivery</h1><p className="mt-2 text-sm text-slate-500">Optimize routes, reduce delivery time, and keep the final mile predictable.</p></div><div className="flex items-center gap-2 text-sm text-slate-500"><span className="h-2 w-2 rounded-full bg-emerald-500" />Routing engine ready</div></div>
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4"><Metric cardClass={cardClass} label="On-time delivery" value="94.2%" detail="Across active routes" icon={<Gauge className="h-5 w-5" />} tone="green" /><Metric cardClass={cardClass} label="Avg route time" value={`${avgTime} min`} detail="Actual travel time" icon={<Clock3 className="h-5 w-5" />} tone="blue" /><Metric cardClass={cardClass} label="Optimization gain" value={`${savings}%`} detail="Average time saved" icon={<ArrowDownRight className="h-5 w-5" />} tone="violet" /><Metric cardClass={cardClass} label="Distance planned" value={`${totalDistance} km`} detail={`${routes.length} monitored routes`} icon={<Route className="h-5 w-5" />} tone="amber" /></div>
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2"><Panel cardClass={cardClass} title="Route optimization" subtitle="Optimized time compared with actual time"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={routes} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}><CartesianGrid vertical={false} stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="route" tick={chartStyle} axisLine={false} tickLine={false} /><YAxis tick={chartStyle} axisLine={false} tickLine={false} /><Tooltip contentStyle={tooltipStyle} /><Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} /><Bar dataKey="optimizedTime" fill="#14b8a6" name="Optimized minutes" radius={[5, 5, 0, 0]} /><Bar dataKey="actualTime" fill="#f59e0b" name="Actual minutes" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer></div></Panel><Panel cardClass={cardClass} title="Cost vs distance" subtitle="Identify expensive routes and outliers"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><ScatterChart margin={{ top: 10, right: 15, left: -8, bottom: 0 }}><CartesianGrid stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="distance" name="Distance" unit=" km" tick={chartStyle} /><YAxis dataKey="cost" name="Cost" unit=" ₹" tick={chartStyle} /><ZAxis dataKey="savings" range={[70, 220]} /><Tooltip contentStyle={tooltipStyle} /><Scatter name="Routes" data={routes} fill="#8b5cf6" /></ScatterChart></ResponsiveContainer></div></Panel></div>
+    <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-5"><h2 className="text-lg font-semibold">Route performance</h2><p className="mt-1 text-sm text-slate-500">Operational details for the current route plan.</p></div><div className="grid gap-3">{routes.map((route) => <div key={route.route} className="flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className="rounded-xl bg-cyan-500/10 p-2.5 text-cyan-500"><Truck className="h-5 w-5" /></div><div><p className="font-semibold">{route.route}</p><p className="mt-1 text-xs text-slate-500">{route.distance} km · {route.cost} route cost</p></div></div><div className="grid grid-cols-3 gap-5 text-right text-sm"><div><p className="text-xs text-slate-500">Optimized</p><p className="mt-1 font-semibold">{route.optimizedTime} min</p></div><div><p className="text-xs text-slate-500">Actual</p><p className="mt-1 font-semibold">{route.actualTime} min</p></div><div><p className="text-xs text-slate-500">Savings</p><p className={`mt-1 font-semibold ${route.savings > 15 ? 'text-emerald-600' : 'text-amber-600'}`}>{route.savings}%</p></div></div></div>)}</div></section>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3"><section className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="mb-4 flex items-center gap-2"><MapPinned className="h-5 w-5 text-blue-500" /><h2 className="font-semibold">Delivery zones</h2></div><div className="space-y-2">{zones.map((zone) => <div key={zone.name} className="flex items-center justify-between rounded-lg border p-3 text-sm"><span>{zone.name}</span><span className="font-semibold">{zone.deliveries} stops</span></div>)}</div></section><section className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="mb-4 flex items-center gap-2"><Fuel className="h-5 w-5 text-emerald-500" /><h2 className="font-semibold">Savings today</h2></div><p className="text-3xl font-semibold">₹2,847</p><p className="mt-2 text-sm text-slate-500">Estimated fuel and time savings from optimized routing.</p></section><section className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="mb-4 flex items-center gap-2"><Route className="h-5 w-5 text-violet-500" /><h2 className="font-semibold">Route simulation</h2></div><button className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Simulate new batch</button><div className="mt-4 space-y-2 text-sm"><div className="flex justify-between"><span className="text-slate-500">Estimated savings</span><span className="font-semibold text-emerald-600">18%</span></div><div className="flex justify-between"><span className="text-slate-500">Total distance</span><span className="font-semibold">284 km</span></div></div></section></div>
+  </div>;
 }
 
-const LastMileDelivery: React.FC<LastMileDeliveryProps> = ({ cardClass }) => {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Last-Mile Delivery Optimization</h1>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Route Optimization Results</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={mockDeliveryMetrics}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="route" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="optimizedTime" fill="#10B981" name="Optimized Time" />
-              <Bar dataKey="actualTime" fill="#F59E0B" name="Actual Time" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Cost vs Distance Analysis</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart data={mockDeliveryMetrics}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="distance" name="Distance (km)" />
-              <YAxis dataKey="cost" name="Cost ($)" />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-              <Scatter name="Routes" data={mockDeliveryMetrics} fill="#8884d8" />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-        <h3 className="text-lg font-semibold mb-4">Route Performance Details</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-3">Route</th>
-                <th className="text-left p-3">Distance (km)</th>
-                <th className="text-left p-3">Optimized Time</th>
-                <th className="text-left p-3">Actual Time</th>
-                <th className="text-left p-3">Time Savings</th>
-                <th className="text-left p-3">Cost ($)</th>
-                <th className="text-left p-3">Efficiency</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockDeliveryMetrics.map((route, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-medium">{route.route}</td>
-                  <td className="p-3">{route.distance}</td>
-                  <td className="p-3">{route.optimizedTime} min</td>
-                  <td className="p-3">{route.actualTime} min</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      route.savings > 15 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {route.savings}%
-                    </span>
-                  </td>
-                  <td className="p-3">${route.cost}</td>
-                  <td className="p-3">
-                    <div className={`w-full bg-gray-200 rounded-full h-2`}>
-                      <div 
-                        className={`h-2 rounded-full ${
-                          route.savings > 15 ? 'bg-green-500' : 'bg-yellow-500'
-                        }`}
-                        style={{ width: `${Math.min(route.savings * 4, 100)}%` }}
-                      ></div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Delivery Clustering</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-              <span>North Zone</span>
-              <span className="font-semibold">24 deliveries</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-              <span>South Zone</span>
-              <span className="font-semibold">18 deliveries</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-              <span>East Zone</span>
-              <span className="font-semibold">32 deliveries</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-              <span>West Zone</span>
-              <span className="font-semibold">15 deliveries</span>
-            </div>
-          </div>
-        </div>
-
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Real-time Metrics</h3>
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">94.2%</p>
-              <p className="text-sm text-gray-600">On-time Delivery</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">$2,847</p>
-              <p className="text-sm text-gray-600">Cost Savings Today</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">127</p>
-              <p className="text-sm text-gray-600">Active Routes</p>
-            </div>
-          </div>
-        </div>
-
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Route Simulation</h3>
-          <button className="w-full mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-            Simulate New Batch
-          </button>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Estimated Savings:</span>
-              <span className="font-semibold text-green-600">18%</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Total Distance:</span>
-              <span className="font-semibold">284 km</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Delivery Time:</span>
-              <span className="font-semibold">4.2 hours</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default LastMileDelivery;
+function Metric({ cardClass, label, value, detail, icon, tone }: { cardClass: string; label: string; value: string; detail: string; icon: React.ReactNode; tone: string }) { const color = tone === 'green' ? 'bg-emerald-500/10 text-emerald-500' : tone === 'amber' ? 'bg-amber-500/10 text-amber-500' : tone === 'violet' ? 'bg-violet-500/10 text-violet-500' : 'bg-blue-500/10 text-blue-500'; return <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="flex items-start justify-between"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="mt-3 text-2xl font-semibold">{value}</p></div><div className={`rounded-xl p-2.5 ${color}`}>{icon}</div></div><p className="mt-3 text-xs text-slate-500">{detail}</p></div>; }
+function Panel({ cardClass, title, subtitle, children }: { cardClass: string; title: string; subtitle: string; children: React.ReactNode }) { return <div className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-4"><h2 className="text-lg font-semibold">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>{children}</div>; }

@@ -1,117 +1,21 @@
-import React from 'react';
-import { AlertTriangle, Filter, CheckCircle } from 'lucide-react';
+'use client';
+
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, CircleAlert, Filter, Search, ShieldCheck } from 'lucide-react';
 import { Alert } from '../../types';
 
-interface AlertsPageProps {
-  cardClass: string;
-  alerts: Alert[];
-  resolveAlert: (alertId: number) => void;
+interface AlertsPageProps { cardClass: string; alerts: Alert[]; resolveAlert: (alertId: number | string) => void; darkMode?: boolean; }
+
+export default function AlertsPage({ cardClass, alerts, resolveAlert, darkMode = false }: AlertsPageProps) {
+  const [severity, setSeverity] = useState('all'); const [view, setView] = useState('active'); const [search, setSearch] = useState('');
+  const open = alerts.filter((alert) => !alert.resolved); const critical = open.filter((alert) => alert.type === 'critical').length; const warnings = open.filter((alert) => alert.type === 'warning').length; const resolved = alerts.filter((alert) => alert.resolved).length;
+  const visible = useMemo(() => alerts.filter((alert) => (view === 'active' ? !alert.resolved : view === 'resolved' ? alert.resolved : true)).filter((alert) => severity === 'all' || alert.type === severity).filter((alert) => alert.message.toLowerCase().includes(search.toLowerCase())), [alerts, view, severity, search]);
+  return <div className="space-y-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Operational signal center</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Alerts & anomalies</h1><p className="mt-2 text-sm text-slate-500">Resolve the exceptions that can affect stock, service, and delivery performance.</p></div><div className="flex items-center gap-2 text-sm text-slate-500"><span className={`h-2 w-2 rounded-full ${critical ? 'bg-rose-500' : 'bg-emerald-500'}`} />{critical ? `${critical} critical signal${critical > 1 ? 's' : ''}` : 'No critical signals'}</div></div>
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4"><Metric cardClass={cardClass} label="Critical" value={critical} icon={<CircleAlert className="h-5 w-5" />} tone="red" /><Metric cardClass={cardClass} label="Warnings" value={warnings} icon={<AlertTriangle className="h-5 w-5" />} tone="amber" /><Metric cardClass={cardClass} label="Open signals" value={open.length} icon={<Filter className="h-5 w-5" />} tone="blue" /><Metric cardClass={cardClass} label="Resolved" value={resolved} icon={<ShieldCheck className="h-5 w-5" />} tone="green" /></div>
+    <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div className="flex rounded-lg border p-1 text-sm"><button onClick={() => setView('active')} className={`rounded-md px-3 py-1.5 ${view === 'active' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Active</button><button onClick={() => setView('all')} className={`rounded-md px-3 py-1.5 ${view === 'all' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>All</button><button onClick={() => setView('resolved')} className={`rounded-md px-3 py-1.5 ${view === 'resolved' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Resolved</button></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"><Search className="h-4 w-4 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search alerts" className="w-full bg-transparent outline-none sm:w-44" /></label><select value={severity} onChange={(event) => setSeverity(event.target.value)} className="rounded-lg border bg-transparent px-3 py-2 text-sm"><option value="all">All severity</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="info">Info</option></select></div></div><div className="mt-5 space-y-3">{visible.map((alert) => <AlertCard key={alert.id} alert={alert} resolveAlert={resolveAlert} darkMode={darkMode} />)}{!visible.length && <div className="rounded-xl border border-dashed p-10 text-center text-sm text-slate-500">No alerts match the current filters.</div>}</div></section>
+    <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-4 flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><div><h2 className="text-lg font-semibold">Resolution history</h2><p className="text-sm text-slate-500">Recently resolved operational signals.</p></div></div><div className="space-y-2">{alerts.filter((alert) => alert.resolved).slice(0, 5).map((alert) => <div key={alert.id} className="flex items-center justify-between rounded-xl border p-3"><div><p className="text-sm font-medium">{alert.message}</p><p className="mt-1 text-xs text-slate-500">{alert.timestamp}</p></div><span className="text-xs font-medium text-emerald-600">Resolved</span></div>)}{!resolved && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-slate-500">No resolved alerts yet.</p>}</div></section>
+  </div>;
 }
 
-const AlertsPage: React.FC<AlertsPageProps> = ({ cardClass, alerts, resolveAlert }) => {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Alerts & Anomalies</h1>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-            <Filter className="w-4 h-4 inline mr-2" />
-            Filter
-          </button>
-          <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
-            Mark All Read
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm text-center`}>
-          <div className="text-2xl font-bold text-red-600">
-            {alerts.filter(a => !a.resolved && a.type === 'critical').length}
-          </div>
-          <div className="text-sm text-gray-600">Critical Alerts</div>
-        </div>
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm text-center`}>
-          <div className="text-2xl font-bold text-yellow-600">
-            {alerts.filter(a => !a.resolved && a.type === 'warning').length}
-          </div>
-          <div className="text-sm text-gray-600">Warning Alerts</div>
-        </div>
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm text-center`}>
-          <div className="text-2xl font-bold text-blue-600">
-            {alerts.filter(a => !a.resolved && a.type === 'info').length}
-          </div>
-          <div className="text-sm text-gray-600">Info Alerts</div>
-        </div>
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm text-center`}>
-          <div className="text-2xl font-bold text-green-600">
-            {alerts.filter(a => a.resolved).length}
-          </div>
-          <div className="text-sm text-gray-600">Resolved Today</div>
-        </div>
-      </div>
-
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-        <h3 className="text-lg font-semibold mb-4">Active Alerts</h3>
-        <div className="space-y-4">
-          {alerts.filter(a => !a.resolved).map((alert) => (
-            <div key={alert.id} className={`p-4 rounded-lg border-l-4 ${
-              alert.type === 'critical' ? 'bg-red-50 border-red-500' :
-              alert.type === 'warning' ? 'bg-yellow-50 border-yellow-500' :
-              'bg-blue-50 border-blue-500'
-            }`}>
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className={`w-5 h-5 ${
-                      alert.type === 'critical' ? 'text-red-500' :
-                      alert.type === 'warning' ? 'text-yellow-500' :
-                      'text-blue-500'
-                    }`} />
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      alert.type === 'critical' ? 'bg-red-100 text-red-800' :
-                      alert.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {alert.type.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="font-medium mb-1">{alert.message}</p>
-                  <p className="text-sm text-gray-500">{alert.timestamp}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm transition-colors">
-                    Snooze
-                  </button>
-                  <button 
-                    onClick={() => resolveAlert(alert.id)}
-                    className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm transition-colors"
-                  >
-                    Resolve
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-        <h3 className="text-lg font-semibold mb-4">Alert History</h3>
-        <div className="space-y-3">
-          {alerts.filter(a => a.resolved).map((alert) => (
-            <div key={alert.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-              <div>
-                <p className="font-medium text-gray-700">{alert.message}</p>
-                <p className="text-sm text-gray-500">{alert.timestamp} - Resolved</p>
-              </div>
-              <CheckCircle className="w-5 h-5 text-green-500" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default AlertsPage;
+function Metric({ cardClass, label, value, icon, tone }: { cardClass: string; label: string; value: number; icon: React.ReactNode; tone: string }) { const color = tone === 'red' ? 'bg-rose-500/10 text-rose-500' : tone === 'amber' ? 'bg-amber-500/10 text-amber-500' : tone === 'green' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'; return <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="flex items-start justify-between"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="mt-3 text-3xl font-semibold">{value}</p></div><div className={`rounded-xl p-2.5 ${color}`}>{icon}</div></div></div>; }
+function AlertCard({ alert, resolveAlert, darkMode }: { alert: Alert; resolveAlert: (id: number | string) => void; darkMode: boolean }) { const critical = alert.type === 'critical'; const warning = alert.type === 'warning'; const wrapper = critical ? (darkMode ? 'border-rose-400/25 bg-rose-400/10' : 'border-rose-200 bg-rose-50') : warning ? (darkMode ? 'border-amber-400/25 bg-amber-400/10' : 'border-amber-200 bg-amber-50') : (darkMode ? 'border-blue-400/25 bg-blue-400/10' : 'border-blue-200 bg-blue-50'); const icon = critical ? 'text-rose-500' : warning ? 'text-amber-500' : 'text-blue-500'; return <div className={`rounded-xl border-l-4 p-4 ${wrapper} ${critical ? 'border-l-rose-500' : warning ? 'border-l-amber-500' : 'border-l-blue-500'}`}><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div className="flex items-start gap-3"><AlertTriangle className={`mt-0.5 h-5 w-5 shrink-0 ${icon}`} /><div><div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase ${icon}`}>{alert.type}</span>{alert.resolved && <span className="text-xs text-emerald-600">Resolved</span>}</div><p className="mt-2 text-sm font-medium">{alert.message}</p><p className="mt-1 text-xs text-slate-500">{alert.timestamp}</p></div></div>{!alert.resolved && <button onClick={() => resolveAlert(alert.id)} className="self-end rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 sm:self-auto">Resolve alert</button>}</div></div>; }

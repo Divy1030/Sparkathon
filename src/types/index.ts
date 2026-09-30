@@ -64,11 +64,33 @@ export interface Supplier {
 }
 
 export interface InventoryItem {
+  id?: string;
+  warehouseId?: string;
+  productId?: string;
+  sku?: string;
+  category?: ProductCategory;
+  unitPrice?: number;
+  availableQuantity?: number;
+  status?: 'in_stock' | 'low_stock' | 'out_of_stock' | 'overstocked';
   product: string;
   current: number;
   forecasted: number;
   reorderLevel: number;
   trend: 'up' | 'down';
+}
+
+export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'packed' | 'shipped' | 'delivered' | 'cancelled' | 'returned';
+
+export interface CustomerOrder {
+  _id: string;
+  orderNumber: string;
+  customer: { name: string; email: string; phone: string; address: { street: string; city: string; state: string; country: string; zipCode: string } };
+  items: Array<{ product: { id: string; name: string; sku: string; category: ProductCategory }; quantity: number; unitPrice: number; totalPrice: number }>;
+  orderTotal: { totalAmount: number; shippingCost: number };
+  status: OrderStatus;
+  priority: string;
+  assignedWarehouse?: { name: string };
+  tracking?: { trackingNumber: string };
 }
 
 export interface DemandForecast {
@@ -79,7 +101,7 @@ export interface DemandForecast {
 }
 
 export interface Alert {
-  id: number;
+  id: number | string;
   type: 'critical' | 'warning' | 'info';
   message: string;
   timestamp: string;

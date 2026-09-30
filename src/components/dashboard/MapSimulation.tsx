@@ -1,213 +1,28 @@
+'use client';
+
 import React, { useState } from 'react';
+import { Activity, Clock3, Fuel, Layers3, MapPinned, Navigation, Route as RouteIcon, Truck } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Legend } from 'recharts';
-import RouteOptimizer from '../maps/RouteOptimizer';
 import dynamic from 'next/dynamic';
+import RouteOptimizer from '../maps/RouteOptimizer';
 
-interface RouteResult {
-  distance: number;
-  duration: number;
-  estimatedTime?: number;
-  optimizedTime?: number;
-  timeSavings?: string;
-  coordinates?: number[][];
-  waypoints?: Array<{
-    position: number[];
-    name: string;
-    type: 'start' | 'end' | 'waypoint';
-  }>;
-  success?: boolean;
+interface RouteResult { distance: number; duration: number; estimatedTime?: number; optimizedTime?: number; timeSavings?: string; coordinates?: number[][]; waypoints?: Array<{ position: number[]; name: string; type: 'start' | 'end' | 'waypoint' }>; success?: boolean; }
+const LightMap = dynamic(() => import('../maps/LightMap'), { ssr: false, loading: () => <div className="flex h-[440px] items-center justify-center rounded-xl bg-slate-900 text-sm text-slate-400">Loading map surface…</div> });
+interface MapSimulationProps { cardClass: string; darkMode: boolean; }
+
+export default function MapSimulation({ cardClass, darkMode }: MapSimulationProps) {
+  const [routeData, setRouteData] = useState<RouteResult | null>(null); const [isCalculating, setIsCalculating] = useState(false); const [showTraffic, setShowTraffic] = useState(false); const [showWarehouses, setShowWarehouses] = useState(true); const [showRoutes, setShowRoutes] = useState(true);
+  const handleRouteCalculated = (data: RouteResult | null) => { setRouteData(data); setIsCalculating(false); if (data) setShowRoutes(true); };
+  const chartStyle = { fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }; const tooltipStyle = { borderRadius: 12, border: 0, background: darkMode ? '#172033' : '#0f172a', color: '#fff' };
+  return <div className="space-y-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Network visualization</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Map simulation</h1><p className="mt-2 text-sm text-slate-500">Build routes, inspect warehouse coverage, and measure delivery efficiency.</p></div><div className="flex items-center gap-2 text-sm text-slate-500"><span className="h-2 w-2 rounded-full bg-emerald-500" />Map services online</div></div>
+    <RouteOptimizer darkMode={darkMode} cardClass={cardClass} onRouteCalculated={handleRouteCalculated} />
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4"><Metric cardClass={cardClass} label="Active routes" value={routeData ? '1' : '127'} icon={<RouteIcon className="h-5 w-5" />} tone="blue" /><Metric cardClass={cardClass} label="Delivery vehicles" value="84" icon={<Truck className="h-5 w-5" />} tone="cyan" /><Metric cardClass={cardClass} label="Average time" value={routeData?.duration ? `${Math.floor(routeData.duration / 60)} min` : '42 min'} icon={<Clock3 className="h-5 w-5" />} tone="amber" /><Metric cardClass={cardClass} label="Route success" value="96.8%" icon={<Activity className="h-5 w-5" />} tone="green" /></div>
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_0.55fr]"><section className={`rounded-2xl border p-4 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-semibold">Interactive route map</h2><p className="mt-1 text-sm text-slate-500">{routeData ? 'Optimized route ready for inspection.' : 'Calculate a route to visualize the network.'}</p></div><span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">Live</span></div><LightMap routeData={routeData} isLoading={isCalculating} /></section><div className="space-y-6"><section className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="mb-4 flex items-center gap-2"><Layers3 className="h-5 w-5 text-blue-500" /><h2 className="font-semibold">Map layers</h2></div><div className="space-y-2"><Toggle label="Warehouses" active={showWarehouses} onClick={() => setShowWarehouses(!showWarehouses)} /><Toggle label="Routes" active={showRoutes} onClick={() => setShowRoutes(!showRoutes)} /><Toggle label="Traffic data" active={showTraffic} onClick={() => setShowTraffic(!showTraffic)} /></div></section><section className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="mb-4 flex items-center gap-2"><Navigation className="h-5 w-5 text-violet-500" /><h2 className="font-semibold">Route analytics</h2></div><div className="space-y-3"><Stat label="Time savings" value={routeData?.timeSavings || '15%'} /><Stat label="Fuel saved" value="₹2,840" /><Stat label="Distance" value={routeData?.distance ? `${(routeData.distance / 1000).toFixed(0)} km` : '284 km'} /></div></section></div></div>
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2"><Panel cardClass={cardClass} title="Delivery zone analysis" subtitle="Demand clusters across the network"><ResponsiveContainer width="100%" height="100%"><ScatterChart margin={{ top: 10, right: 10, left: -8, bottom: 0 }}><CartesianGrid stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="x" name="Latitude" tick={chartStyle} /><YAxis dataKey="y" name="Longitude" tick={chartStyle} /><Tooltip contentStyle={tooltipStyle} /><Scatter name="North" data={[{ x: 28.7, y: 77.1 }, { x: 28.6, y: 77.2 }]} fill="#3b82f6" /><Scatter name="West" data={[{ x: 19, y: 72.8 }, { x: 19.1, y: 72.9 }]} fill="#10b981" /><Scatter name="South" data={[{ x: 12.9, y: 77.5 }, { x: 13, y: 77.6 }]} fill="#f59e0b" /></ScatterChart></ResponsiveContainer></Panel><Panel cardClass={cardClass} title="Route efficiency trend" subtitle="Network efficiency over recent weeks"><ResponsiveContainer width="100%" height="100%"><LineChart data={[{ week: 'W1', efficiency: 85, cost: 2400 }, { week: 'W2', efficiency: 88, cost: 2200 }, { week: 'W3', efficiency: 92, cost: 2100 }, { week: 'W4', efficiency: 89, cost: 2300 }, { week: 'W5', efficiency: 94, cost: 1900 }, { week: 'W6', efficiency: 96, cost: 1800 }]}><CartesianGrid vertical={false} stroke={darkMode ? '#334155' : '#e2e8f0'} /><XAxis dataKey="week" tick={chartStyle} /><YAxis tick={chartStyle} /><Tooltip contentStyle={tooltipStyle} /><Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} /><Line type="monotone" dataKey="efficiency" stroke="#10b981" strokeWidth={3} name="Efficiency %" /><Line type="monotone" dataKey="cost" stroke="#f43f5e" strokeWidth={2} name="Cost" /></LineChart></ResponsiveContainer></Panel></div>
+  </div>;
 }
 
-// Dynamically import the map component to avoid SSR issues
-const LightMap = dynamic(() => import('../maps/LightMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-      <div className="text-gray-500">Loading map...</div>
-    </div>
-  )
-});
-
-interface MapSimulationProps {
-  cardClass: string;
-  darkMode: boolean;
-}
-
-const MapSimulation: React.FC<MapSimulationProps> = ({ cardClass, darkMode }) => {
-  const [routeData, setRouteData] = useState<RouteResult | null>(null);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [showTraffic, setShowTraffic] = useState(false);
-  const [showWarehouses, setShowWarehouses] = useState(true);
-  const [showRoutes, setShowRoutes] = useState(true);
-
-  const handleRouteCalculated = (data: RouteResult | null) => {
-    console.log('Route calculated:', data);
-    setRouteData(data);
-    setIsCalculating(false);
-    if (data) {
-      setShowRoutes(true);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Map Simulation & Route Optimization</h1>
-      
-      {/* Route Optimizer Section */}
-      <RouteOptimizer 
-        darkMode={darkMode} 
-        cardClass={cardClass} 
-        onRouteCalculated={handleRouteCalculated}
-      />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-            <h3 className="text-lg font-semibold mb-4">Interactive Route Map</h3>
-            <LightMap 
-              routeData={routeData} 
-              isLoading={isCalculating}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-            <h3 className="text-lg font-semibold mb-4">Map Controls</h3>
-            <div className="space-y-3">
-              <button 
-                onClick={() => setShowWarehouses(!showWarehouses)}
-                className={`w-full px-4 py-2 rounded transition-colors ${
-                  showWarehouses 
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {showWarehouses ? 'Hide' : 'Show'} Warehouses
-              </button>
-              <button 
-                onClick={() => setShowRoutes(!showRoutes)}
-                className={`w-full px-4 py-2 rounded transition-colors ${
-                  showRoutes 
-                    ? 'bg-green-500 text-white hover:bg-green-600' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {showRoutes ? 'Hide' : 'Show'} Routes
-              </button>
-              <button 
-                onClick={() => setShowTraffic(!showTraffic)}
-                className={`w-full px-4 py-2 rounded transition-colors ${
-                  showTraffic 
-                    ? 'bg-red-500 text-white hover:bg-red-600' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {showTraffic ? 'Hide' : 'Show'} Traffic Data
-              </button>
-            </div>
-          </div>
-
-          <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-            <h3 className="text-lg font-semibold mb-4">Live Metrics</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span>Active Routes:</span>
-                <span className="font-semibold">{routeData ? 1 : 127}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery Vehicles:</span>
-                <span className="font-semibold">84</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Avg Delivery Time:</span>
-                <span className="font-semibold">
-                  {routeData?.duration 
-                    ? `${Math.floor(routeData.duration / 60)} min`
-                    : '42 min'
-                  }
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Success Rate:</span>
-                <span className="font-semibold text-green-600">96.8%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-            <h3 className="text-lg font-semibold mb-4">Route Analytics</h3>
-            <div className="space-y-3">
-              <div className="text-center">
-                <div className="text-xl font-bold text-blue-600">
-                  {routeData?.timeSavings ? routeData.timeSavings : '15%'}
-                </div>
-                <div className="text-xs text-gray-600">Time Savings</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-green-600">
-                  $2,840
-                </div>
-                <div className="text-xs text-gray-600">Fuel Cost Saved</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-purple-600">
-                  {routeData?.distance ? `${(routeData.distance / 1000).toFixed(0)} km` : '284 km'}
-                </div>
-                <div className="text-xs text-gray-600">Total Distance</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Delivery Zone Analysis</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart data={[
-              { x: 28.7, y: 77.1, cluster: 'North', deliveries: 45 },
-              { x: 28.6, y: 77.2, cluster: 'North', deliveries: 38 },
-              { x: 19.0, y: 72.8, cluster: 'West', deliveries: 52 },
-              { x: 19.1, y: 72.9, cluster: 'West', deliveries: 41 },
-              { x: 12.9, y: 77.5, cluster: 'South', deliveries: 33 },
-              { x: 13.0, y: 77.6, cluster: 'South', deliveries: 29 }
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="x" name="Latitude" />
-              <YAxis dataKey="y" name="Longitude" />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-              <Scatter name="North Zone" data={[{ x: 28.7, y: 77.1 }, { x: 28.6, y: 77.2 }]} fill="#3B82F6" />
-              <Scatter name="West Zone" data={[{ x: 19.0, y: 72.8 }, { x: 19.1, y: 72.9 }]} fill="#10B981" />
-              <Scatter name="South Zone" data={[{ x: 12.9, y: 77.5 }, { x: 13.0, y: 77.6 }]} fill="#F59E0B" />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
-          <h3 className="text-lg font-semibold mb-4">Route Efficiency Trends</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={[
-              { week: 'W1', efficiency: 85, cost: 2400 },
-              { week: 'W2', efficiency: 88, cost: 2200 },
-              { week: 'W3', efficiency: 92, cost: 2100 },
-              { week: 'W4', efficiency: 89, cost: 2300 },
-              { week: 'W5', efficiency: 94, cost: 1900 },
-              { week: 'W6', efficiency: 96, cost: 1800 }
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="week" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="efficiency" stroke="#10B981" strokeWidth={2} name="Efficiency %" />
-              <Line type="monotone" dataKey="cost" stroke="#EF4444" strokeWidth={2} name="Cost ($)" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default MapSimulation;
+function Metric({ cardClass, label, value, icon, tone }: { cardClass: string; label: string; value: string; icon: React.ReactNode; tone: string }) { const color = tone === 'green' ? 'bg-emerald-500/10 text-emerald-500' : tone === 'amber' ? 'bg-amber-500/10 text-amber-500' : tone === 'cyan' ? 'bg-cyan-500/10 text-cyan-500' : 'bg-blue-500/10 text-blue-500'; return <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}><div className="flex items-start justify-between"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="mt-3 text-2xl font-semibold">{value}</p></div><div className={`rounded-xl p-2.5 ${color}`}>{icon}</div></div></div>; }
+function Panel({ cardClass, title, subtitle, children }: { cardClass: string; title: string; subtitle: string; children: React.ReactNode }) { return <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}><div className="mb-4"><h2 className="text-lg font-semibold">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div><div className="h-[300px]">{children}</div></section>; }
+function Toggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) { return <button onClick={onClick} className="flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition hover:bg-slate-500/10"><span>{label}</span><span className={`h-5 w-9 rounded-full p-0.5 transition ${active ? 'bg-blue-600' : 'bg-slate-300'}`}><span className={`block h-4 w-4 rounded-full bg-white transition ${active ? 'translate-x-4' : ''}`} /></span></button>; }
+function Stat({ label, value }: { label: string; value: string }) { return <div className="flex items-center justify-between rounded-lg border p-3 text-sm"><span className="text-slate-500">{label}</span><span className="font-semibold">{value}</span></div>; }

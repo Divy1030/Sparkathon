@@ -6,6 +6,7 @@ import WarehouseLocationRecommendations from './WarehouseLocationRecommendations
 
 interface WarehouseAIProps {
   cardClass: string;
+  darkMode?: boolean;
 }
 
 const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
@@ -42,8 +43,9 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
     customerLng: number
   ): Promise<RouteCalculation> => {
     try {
-      // Note: You'll need to get a free API key from openrouteservice.org
-      const API_KEY = '5b3ce3597851110001cf62484f6e4c0b9b5a4e5dbcdb409991d98c2e'; // Replace with your actual API key
+      // Route keys must stay server-side. This legacy client-side fallback is disabled unless explicitly configured.
+      const API_KEY = process.env.NEXT_PUBLIC_OPENROUTESERVICE_API_KEY;
+      if (!API_KEY) throw new Error('OpenRouteService is not configured on the client');
       
       const response = await fetch('https://api.openrouteservice.org/v2/matrix/driving-car', {
         method: 'POST',
@@ -275,16 +277,16 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Warehouse Selector AI</h1>
-        <div className="flex items-center gap-2 text-blue-600">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Decision automation</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Warehouse Selector AI</h1><p className="mt-2 text-sm text-slate-500">Match customer demand to the best facility using stock, proximity, capacity, and efficiency.</p></div>
+          <div className="flex items-center gap-2 text-sm text-blue-600">
           <Truck className="w-5 h-5" />
           <span className="text-sm font-medium">Smart Location Matching</span>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+      <div className={`flex space-x-1 rounded-xl border p-1 ${cardClass}`}>
         <button
           onClick={() => setActiveTab('selection')}
           className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -422,7 +424,7 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
             
             {(selectionResult.status === 'ok' || selectionResult.status === 'partial') && selectionResult.warehouse && (
               <div className="space-y-4">
-                <div className={`p-4 border rounded-lg ${
+              <div className={`rounded-xl border p-4 ${
                   selectionResult.status === 'ok' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
                 }`}>
                   <h4 className={`font-semibold flex items-center gap-2 ${
@@ -562,7 +564,7 @@ const WarehouseAI: React.FC<WarehouseAIProps> = ({ cardClass }) => {
       </div>
 
       {/* Warehouse Status Overview */}
-      <div className={`p-6 rounded-lg ${cardClass} border shadow-sm`}>
+      <div className={`rounded-2xl border p-6 shadow-sm ${cardClass}`}>
         <h3 className="text-lg font-semibold mb-4">Warehouse Network Status</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {mockWarehouses.map((warehouse) => (
